@@ -12,7 +12,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import studentRoutes from "./routes/studentRoutes.js";
 import staffRoutes from "./routes/staffRoutes.js";
 import guestRoutes from "./routes/guestRoutes.js";
-import queueRoutes from "./routes/queueRoutes.js"; // ✅ NEW
+import queueRoutes from "./routes/queueRoutes.js";
 
 // =======================
 // LOAD ENV VARIABLES
@@ -25,18 +25,29 @@ dotenv.config();
 const app = express();
 
 // =======================
+// ALLOWED ORIGINS (LOCAL + PROD)
+// =======================
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://campus-queue-management-system-1.onrender.com",
+];
+
+// =======================
 // MIDDLEWARES
 // =======================
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true); // allow server-to-server
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-      "x-guest-token",
-    ],
+    allowedHeaders: ["Content-Type", "Authorization", "x-guest-token"],
   })
 );
 
@@ -50,7 +61,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/student", studentRoutes);
 app.use("/api/staff", staffRoutes);
 app.use("/api/guest", guestRoutes);
-app.use("/api/queue", queueRoutes); // ✅ REQUIRED FOR GUEST FIX
+app.use("/api/queue", queueRoutes);
 
 // =======================
 // TEST ROUTE
@@ -74,7 +85,7 @@ const server = http.createServer(app);
 // =======================
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL,
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-guest-token"],
@@ -90,7 +101,7 @@ io.on("connection", (socket) => {
   socket.on("join_department", (departmentId) => {
     const roomName = `department_${departmentId}`;
     socket.join(roomName);
-    console.log(`🏠 Socket ${socket.id} joined room ${roomName}`);
+    console.log(`🏠 Socket ${socket.id} joined ${roomName}`);
   });
 
   socket.on("disconnect", () => {
