@@ -24,16 +24,24 @@ export default function GuestJoin() {
      READ DEPARTMENT ID FROM URL
   ========================== */
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const deptId = params.get("departmentId");
+  // Hash example: "#/guest/join?departmentId=123"
+  const hash = location.hash || window.location.hash;
 
-    if (!deptId) {
-      setMessage("Invalid or expired QR code");
-      return;
-    }
+  const queryString = hash.includes("?")
+    ? hash.split("?")[1]
+    : "";
 
-    setDepartmentId(deptId);
-  }, [location.search]);
+  const params = new URLSearchParams(queryString);
+  const deptId = params.get("departmentId");
+
+  if (!deptId) {
+    setMessage("Invalid or expired QR code");
+    return;
+  }
+
+  setDepartmentId(deptId);
+}, [location.hash]);
+
 
   /* ==========================
      JOIN QUEUE (FIXED)

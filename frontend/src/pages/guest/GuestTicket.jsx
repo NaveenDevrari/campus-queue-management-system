@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../../services/api"; // ✅ USE CENTRALIZED API
 import { socket } from "../../services/socket";
 
 export default function GuestTicket() {
@@ -12,9 +12,6 @@ export default function GuestTicket() {
   const [currentServing, setCurrentServing] = useState(null);
   const [message, setMessage] = useState("");
 
-  /* ==========================
-     SOCKET JOIN GUARD
-  ========================== */
   const joinedRef = useRef(false);
 
   /* ==========================
@@ -31,7 +28,7 @@ export default function GuestTicket() {
   }, []);
 
   /* ==========================
-     RESTORE TICKET
+     RESTORE TICKET (FIXED)
   ========================== */
   useEffect(() => {
     const restoreTicket = async () => {
@@ -43,12 +40,10 @@ export default function GuestTicket() {
       }
 
       try {
-        const res = await axios.get(
-          "http://localhost:5000/api/guest/restore",
-          {
-            headers: { "x-guest-token": guestToken },
-          }
-        );
+        const res = await api.get("/guest/restore", {
+          headers: { "x-guest-token": guestToken },
+          withCredentials: true,
+        });
 
         setTicket(res.data);
       } catch {
@@ -92,17 +87,20 @@ export default function GuestTicket() {
   }, [ticket]);
 
   /* ==========================
-     CANCEL TICKET
+     CANCEL TICKET (FIXED)
   ========================== */
   const handleCancel = async () => {
     const guestToken = localStorage.getItem("guestToken");
     if (!guestToken) return;
 
     try {
-      await axios.post(
-        "http://localhost:5000/api/guest/cancel",
+      await api.post(
+        "/guest/cancel",
         {},
-        { headers: { "x-guest-token": guestToken } }
+        {
+          headers: { "x-guest-token": guestToken },
+          withCredentials: true,
+        }
       );
 
       localStorage.removeItem("guestToken");
@@ -118,11 +116,7 @@ export default function GuestTicket() {
   ========================== */
   useEffect(() => {
     if (!message) return;
-
-    const timer = setTimeout(() => {
-      setMessage("");
-    }, 5000);
-
+    const timer = setTimeout(() => setMessage(""), 5000);
     return () => clearTimeout(timer);
   }, [message]);
 
@@ -150,10 +144,7 @@ export default function GuestTicket() {
   ========================== */
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#eef2f6] via-[#e6ecf5] to-[#dfe7f1] px-4 py-10 flex justify-center">
-
       <div className="w-full max-w-md">
-
-        {/* HEADER */}
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-slate-900">
             Your Queue Ticket
@@ -163,7 +154,6 @@ export default function GuestTicket() {
           </p>
         </div>
 
-        {/* NOW SERVING */}
         <div className="text-center mb-12">
           <p className="uppercase tracking-widest text-sm text-slate-500 mb-3">
             Now Serving
@@ -173,27 +163,13 @@ export default function GuestTicket() {
           </div>
 
           {isMyTurn && (
-            <div
-              className="
-                mt-6 inline-flex items-center gap-3
-                px-6 py-3 rounded-full
-                bg-emerald-600 text-white
-                font-semibold text-lg
-                shadow-lg animate-pulse
-              "
-            >
+            <div className="mt-6 inline-flex items-center gap-3 px-6 py-3 rounded-full bg-emerald-600 text-white font-semibold text-lg shadow-lg animate-pulse">
               🔔 It’s your turn! Please proceed
             </div>
           )}
         </div>
 
-        {/* TICKET CARD */}
-        <div
-          className="
-            bg-white/90 rounded-3xl p-8
-            shadow-xl border border-slate-300
-          "
-        >
+        <div className="bg-white/90 rounded-3xl p-8 shadow-xl border border-slate-300">
           <h3 className="text-lg font-semibold text-slate-900 mb-6 text-center">
             Ticket Details
           </h3>
@@ -208,42 +184,29 @@ export default function GuestTicket() {
 
             <div>
               <p className="text-xs text-slate-500">Department</p>
-              <p className="font-semibold">
-                {ticket.department}
-              </p>
+              <p className="font-semibold">{ticket.department}</p>
             </div>
 
             <div>
               <p className="text-xs text-slate-500">Status</p>
-              <p className="font-semibold capitalize">
-                {ticket.status}
-              </p>
+              <p className="font-semibold capitalize">{ticket.status}</p>
             </div>
 
             <div>
               <p className="text-xs text-slate-500">Position</p>
-              <p className="font-semibold">
-                {ticket.position}
-              </p>
+              <p className="font-semibold">{ticket.position}</p>
             </div>
           </div>
 
-          {/* CANCEL */}
           <button
             onClick={handleCancel}
             disabled={isMyTurn}
-            className="
-              mt-10 w-full py-3 rounded-xl
-              bg-red-500/80 text-white font-semibold
-              hover:bg-red-600 transition
-              disabled:opacity-50 disabled:cursor-not-allowed
-            "
+            className="mt-10 w-full py-3 rounded-xl bg-red-500/80 text-white font-semibold hover:bg-red-600 transition disabled:opacity-50"
           >
             Cancel Ticket
           </button>
         </div>
 
-        {/* MESSAGE */}
         {message && (
           <div className="mt-6 text-center text-sm text-red-600">
             {message}
