@@ -7,7 +7,7 @@ import {
   increaseQueueLimit,
   getQueueStats,
 } from "../../services/staff";
-import axios from "axios";
+import api from "../../services/api"; // ✅ USE CENTRALIZED API
 import { socket } from "../../services/socket";
 
 export default function StaffDashboard() {
@@ -139,19 +139,19 @@ export default function StaffDashboard() {
     }
   };
 
+  /* =========================
+     FIXED QR GENERATION (NO LOCALHOST)
+  ========================= */
   const handleGenerateQR = async () => {
     try {
       setQrLoading(true);
-      const token = localStorage.getItem("token");
 
-      const res = await axios.get(
-        "http://localhost:5000/api/staff/department/qr",
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await api.get("/staff/department/qr");
 
       setQrData(res.data);
       setMessage("");
-    } catch {
+    } catch (err) {
+      console.error(err);
       setMessage("Failed to generate QR");
     } finally {
       setQrLoading(false);
@@ -172,7 +172,6 @@ export default function StaffDashboard() {
   ========================= */
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#eef2f6] via-[#e6ecf5] to-[#dfe7f1] px-6 pt-10 pb-20">
-
       {/* HEADER */}
       <section className="max-w-6xl mx-auto mb-12">
         <h1 className="text-4xl font-bold text-slate-900">
@@ -231,7 +230,6 @@ export default function StaffDashboard() {
 
       {/* SETTINGS + QR */}
       <section className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20">
-
         {/* QUEUE SETTINGS */}
         <div className="space-y-10">
           <div>
