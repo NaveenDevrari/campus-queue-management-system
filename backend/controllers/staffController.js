@@ -256,6 +256,7 @@ export const increaseQueueLimit = async (req, res) => {
   }
 };
 
+
 // ===============================
 // GENERATE QR FOR STAFF DEPARTMENT
 // ===============================
@@ -274,7 +275,9 @@ export const generateDepartmentQR = async (req, res) => {
 
     const departmentId = staff.department.toString();
 
-    const joinUrl = `${process.env.FRONTEND_URL}/guest/join?departmentId=${departmentId}`;
+    // ✅ IMPORTANT: HashRouter-compatible URL
+    const joinUrl = `${process.env.FRONTEND_BASE_URL}/#/guest/join?departmentId=${departmentId}`;
+
     const qrCode = await QRCode.toDataURL(joinUrl);
 
     res.json({
@@ -287,6 +290,7 @@ export const generateDepartmentQR = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 
 // ==============================
