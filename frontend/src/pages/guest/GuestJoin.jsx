@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../../services/api"; // ✅ USE CENTRALIZED API
 
 export default function GuestJoin() {
   const location = useLocation();
@@ -16,7 +16,6 @@ export default function GuestJoin() {
      ENSURE GUEST IS ANONYMOUS
   ========================== */
   useEffect(() => {
-    // Remove authenticated user context
     localStorage.removeItem("token");
     localStorage.removeItem("role");
   }, []);
@@ -37,7 +36,7 @@ export default function GuestJoin() {
   }, [location.search]);
 
   /* ==========================
-     JOIN QUEUE
+     JOIN QUEUE (FIXED)
   ========================== */
   const handleJoin = async () => {
     if (!departmentId) return;
@@ -48,8 +47,8 @@ export default function GuestJoin() {
 
       const guestToken = localStorage.getItem("guestToken");
 
-      const res = await axios.post(
-        "http://localhost:5000/api/guest/join",
+      const res = await api.post(
+        "/guest/join",
         {
           departmentId,
           name,
@@ -59,6 +58,7 @@ export default function GuestJoin() {
           headers: guestToken
             ? { "x-guest-token": guestToken }
             : {},
+          withCredentials: true, // ✅ REQUIRED FOR MOBILE
         }
       );
 
@@ -81,11 +81,7 @@ export default function GuestJoin() {
   ========================== */
   useEffect(() => {
     if (!message) return;
-
-    const timer = setTimeout(() => {
-      setMessage("");
-    }, 5000);
-
+    const timer = setTimeout(() => setMessage(""), 5000);
     return () => clearTimeout(timer);
   }, [message]);
 
@@ -94,10 +90,7 @@ export default function GuestJoin() {
   ========================== */
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#eef2f6] via-[#e6ecf5] to-[#dfe7f1] px-4 py-12 flex justify-center items-center">
-
       <div className="w-full max-w-md bg-white/90 rounded-3xl p-8 shadow-xl border border-slate-300">
-
-        {/* HEADER */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-slate-900">
             Join Queue
@@ -107,52 +100,34 @@ export default function GuestJoin() {
           </p>
         </div>
 
-        {/* MESSAGE */}
         {message && (
           <div className="mb-6 text-center text-sm text-red-600">
             {message}
           </div>
         )}
 
-        {/* NAME */}
         <input
           placeholder="Your Name (optional)"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="
-            w-full px-5 py-4 mb-4 rounded-xl
-            border border-slate-300 bg-white
-            focus:outline-none focus:ring-2 focus:ring-blue-600/30
-          "
+          className="w-full px-5 py-4 mb-4 rounded-xl border border-slate-300 bg-white"
         />
 
-        {/* PHONE */}
         <input
           placeholder="Phone (optional)"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
-          className="
-            w-full px-5 py-4 mb-6 rounded-xl
-            border border-slate-300 bg-white
-            focus:outline-none focus:ring-2 focus:ring-blue-600/30
-          "
+          className="w-full px-5 py-4 mb-6 rounded-xl border border-slate-300 bg-white"
         />
 
-        {/* JOIN BUTTON */}
         <button
           onClick={handleJoin}
           disabled={loading || !departmentId}
-          className="
-            w-full py-4 rounded-2xl
-            bg-blue-600 text-white font-semibold
-            hover:bg-slate-900 transition
-            disabled:opacity-50 disabled:cursor-not-allowed
-          "
+          className="w-full py-4 rounded-2xl bg-blue-600 text-white font-semibold hover:bg-slate-900 transition disabled:opacity-50"
         >
           {loading ? "Joining..." : "Join Queue"}
         </button>
 
-        {/* FOOTER NOTE */}
         <p className="mt-6 text-center text-xs text-slate-500">
           You will receive a ticket number after joining
         </p>
