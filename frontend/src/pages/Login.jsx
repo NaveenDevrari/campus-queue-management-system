@@ -40,65 +40,69 @@ export default function Login() {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
+    <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden text-slate-100">
 
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#eef2f6] to-[#dbe3ee]" />
+      {/* BACKGROUND (MATCH HOME / ADMIN) */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0a1330] via-[#0f1f4d] to-[#141b3a]" />
 
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse at center, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.10) 35%, rgba(0,0,0,0.03) 60%, rgba(0,0,0,0) 75%)",
-        }}
-      />
+      {/* SOFT GLOWS */}
+      <div className="absolute -top-40 -left-40 w-[500px] h-[500px] bg-violet-600/25 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 -right-40 w-[400px] h-[400px] bg-indigo-600/25 rounded-full blur-3xl" />
 
-      {/* Card */}
+      {/* CARD */}
       <div
         className="
           relative z-10
           w-full max-w-xl
           rounded-3xl
-          bg-white/95 backdrop-blur-md
+          bg-white/5 backdrop-blur-xl
+          border border-white/10
           px-12 py-14
-          shadow-[0_25px_70px_rgba(0,0,0,0.12)]
+          shadow-[0_30px_90px_rgba(0,0,0,0.55)]
           transition-all duration-300
-          hover:shadow-[0_40px_110px_rgba(0,0,0,0.18)]
+          hover:shadow-[0_45px_130px_rgba(0,0,0,0.75)]
           hover:scale-[1.01]
           animate-login-card
         "
       >
-        {/* LOGO */}
+        {/* LOGO (SAME AS FOOTER / NAV) */}
         <div className="flex flex-col items-center mb-10">
           <div
             className="
-              w-14 h-14 rounded-xl bg-blue-600
+              w-14 h-14 rounded-xl
+              bg-blue-600
               flex items-center justify-center
               text-white font-bold text-lg
-              shadow-md mb-4
-              transition-all duration-300
-              hover:bg-blue-700 hover:shadow-lg
+              shadow-lg
+              mb-4
             "
           >
             CQ
           </div>
 
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+          <h2 className="text-2xl font-bold text-blue-100 tracking-tight">
             Campus Queue
           </h2>
         </div>
 
-        {/* Header */}
+        {/* HEADER */}
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-semibold text-slate-700 mb-2">
+          <h1
+            className="
+              text-3xl font-semibold
+              bg-gradient-to-r from-violet-400 via-fuchsia-400 to-indigo-400
+              bg-clip-text text-transparent
+              mb-2
+            "
+          >
             Welcome Back
           </h1>
-          <p className="text-slate-500">
+          <p className="text-slate-400">
             Login to continue to Campus Queue
           </p>
         </div>
 
-        {/* Inputs */}
+        {/* INPUTS */}
         <div className="space-y-6">
           <input
             type="email"
@@ -108,13 +112,11 @@ export default function Login() {
             onChange={handleChange}
             className="
               w-full px-5 py-4 rounded-xl
-              border border-slate-300
-              bg-white text-slate-800
+              bg-white/10 border border-white/10
+              text-slate-100 placeholder-slate-400
               transition-all duration-300
-              hover:shadow-md hover:border-slate-400
               focus:outline-none
-              focus:border-blue-600
-              focus:ring-1 focus:ring-blue-600/30
+              focus:ring-2 focus:ring-violet-500/40
             "
           />
 
@@ -126,28 +128,26 @@ export default function Login() {
             onChange={handleChange}
             className="
               w-full px-5 py-4 rounded-xl
-              border border-slate-300
-              bg-white text-slate-800
+              bg-white/10 border border-white/10
+              text-slate-100 placeholder-slate-400
               transition-all duration-300
-              hover:shadow-md hover:border-slate-400
               focus:outline-none
-              focus:border-blue-600
-              focus:ring-1 focus:ring-blue-600/30
+              focus:ring-2 focus:ring-violet-500/40
             "
           />
         </div>
 
-        {/* Button */}
+        {/* BUTTON */}
         <button
           onClick={handleLogin}
           disabled={loading}
           className="
             w-full mt-10 py-4 rounded-xl
             text-white font-semibold text-lg
-            bg-blue-600
-            transition-all duration-300
+            bg-gradient-to-r from-blue-600 to-indigo-600
             shadow-lg
-            hover:bg-slate-900 hover:shadow-xl
+            transition-all duration-300
+            hover:from-blue-700 hover:to-indigo-700
             hover:-translate-y-[1px]
             active:translate-y-0
             disabled:opacity-60 disabled:cursor-not-allowed
@@ -156,19 +156,19 @@ export default function Login() {
           {loading ? "Logging in..." : "Login"}
         </button>
 
-        {/* Footer */}
-        <p className="text-center text-slate-500 mt-8">
+        {/* FOOTER */}
+        <p className="text-center text-slate-400 mt-8">
           Don’t have an account?{" "}
           <span
             onClick={() => navigate("/signup")}
-            className="text-blue-600 font-medium cursor-pointer hover:underline"
+            className="text-violet-400 font-medium cursor-pointer hover:underline"
           >
             Sign up
           </span>
         </p>
       </div>
 
-      {/* Animation */}
+      {/* ANIMATION */}
       <style>
         {`
           @keyframes loginCard {

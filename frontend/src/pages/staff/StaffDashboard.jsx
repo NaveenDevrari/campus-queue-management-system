@@ -7,7 +7,7 @@ import {
   increaseQueueLimit,
   getQueueStats,
 } from "../../services/staff";
-import api from "../../services/api"; // ✅ USE CENTRALIZED API
+import api from "../../services/api";
 import { socket } from "../../services/socket";
 
 export default function StaffDashboard() {
@@ -20,24 +20,17 @@ export default function StaffDashboard() {
   const [qrLoading, setQrLoading] = useState(false);
 
   const [completing, setCompleting] = useState(false);
+  const [isQueueOpen, setIsQueueOpen] = useState(false);
 
-  /* =========================
-     QUEUE STATS
-  ========================= */
   const [stats, setStats] = useState({
     total: 0,
     served: 0,
     remaining: 0,
   });
 
-  /* =========================
-     SOCKET JOIN GUARD
-  ========================= */
   const joinedRef = useRef(false);
+  const qrSectionRef = useRef(null);
 
-  /* =========================
-     INIT
-  ========================= */
   useEffect(() => {
     fetchStaff();
     fetchStats();
@@ -62,13 +55,10 @@ export default function StaffDashboard() {
       const data = await getQueueStats();
       setStats(data);
     } catch (err) {
-      console.error("Stats error:", err.response?.data);
+      console.error(err);
     }
   };
 
-  /* =========================
-     SOCKET EVENTS
-  ========================= */
   useEffect(() => {
     const onTicketCalled = (data) => {
       setCurrentTicket(data.ticketNumber);
@@ -90,9 +80,15 @@ export default function StaffDashboard() {
     };
   }, []);
 
-  /* =========================
-     ACTIONS
-  ========================= */
+  useEffect(() => {
+    const handleScrollToQR = () => {
+      qrSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    window.addEventListener("scrollToQR", handleScrollToQR);
+    return () => window.removeEventListener("scrollToQR", handleScrollToQR);
+  }, []);
+
   const handleCallNext = async () => {
     try {
       const data = await callNextTicket();
@@ -106,7 +102,6 @@ export default function StaffDashboard() {
 
   const handleCompleteTicket = async () => {
     if (completing) return;
-
     try {
       setCompleting(true);
       const data = await completeTicket();
@@ -121,6 +116,7 @@ export default function StaffDashboard() {
   const handleToggleQueue = async () => {
     try {
       const data = await toggleQueue();
+      setIsQueueOpen(data.isOpen);
       setMessage(data.message);
     } catch (err) {
       setMessage(err.response?.data?.message || "Failed to toggle queue");
@@ -129,7 +125,6 @@ export default function StaffDashboard() {
 
   const handleIncreaseLimit = async () => {
     if (!increaseBy || Number(increaseBy) <= 0) return;
-
     try {
       const data = await increaseQueueLimit(Number(increaseBy));
       setMessage(`Queue limit updated to ${data.maxTickets}`);
@@ -139,81 +134,65 @@ export default function StaffDashboard() {
     }
   };
 
-  /* =========================
-     FIXED QR GENERATION (NO LOCALHOST)
-  ========================= */
   const handleGenerateQR = async () => {
     try {
       setQrLoading(true);
-
       const res = await api.get("/staff/department/qr");
-
       setQrData(res.data);
       setMessage("");
-    } catch (err) {
-      console.error(err);
+    } catch {
       setMessage("Failed to generate QR");
     } finally {
       setQrLoading(false);
     }
   };
 
-  /* =========================
-     AUTO DISMISS MESSAGE
-  ========================= */
   useEffect(() => {
     if (!message) return;
     const timer = setTimeout(() => setMessage(""), 5000);
     return () => clearTimeout(timer);
   }, [message]);
 
-  /* =========================
-     UI
-  ========================= */
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#eef2f6] via-[#e6ecf5] to-[#dfe7f1] px-6 pt-10 pb-20">
+    <div className="min-h-screen bg-gradient-to-b from-[#0a1330] via-[#0f1f4d] to-[#141b3a] px-6 pt-12 pb-24 text-slate-100">
+
       {/* HEADER */}
-      <section className="max-w-6xl mx-auto mb-12">
-        <h1 className="text-4xl font-bold text-slate-900">
+      <section className="max-w-6xl mx-auto mb-16">
+        <h1 className="text-4xl font-extrabold
+    bg-gradient-to-r
+    from-violet-400 via-fuchsia-300 to-indigo-400
+    bg-clip-text text-transparent">
           Staff Dashboard
         </h1>
-        <p className="text-slate-600 mt-2">
+        <p className="text-slate-300 mt-3">
           Managing queue for{" "}
-          <span className="font-medium text-slate-800">
+          <span className="font-semibold text-slate-100">
             {staff?.department?.name || "your department"}
           </span>
         </p>
       </section>
 
       {/* NOW SERVING */}
-      <section className="max-w-6xl mx-auto mb-14 text-center">
-        <p className="uppercase tracking-widest text-sm text-slate-500 mb-4">
+      <section className="max-w-6xl mx-auto mb-20 text-center">
+        <p className="uppercase tracking-widest text-sm text-slate-400 mb-4">
           Now Serving
         </p>
 
-        <div className="text-[96px] font-extrabold text-blue-600 leading-none">
+        <div className="text-[96px] font-extrabold text-violet-400 drop-shadow-lg">
           {currentTicket || "--"}
         </div>
 
-        {!currentTicket && (
-          <p className="mt-3 text-sm text-slate-500">
-            No active ticket right now
-          </p>
-        )}
-
-        {/* STATS */}
-        <div className="mt-8 flex justify-center gap-6 flex-wrap">
+        <div className="mt-10 flex justify-center gap-6 flex-wrap">
           <StatCard label="Total" value={stats.total} />
           <StatCard label="Served" value={stats.served} color="emerald" />
-          <StatCard label="Remaining" value={stats.remaining} color="blue" />
+          <StatCard label="Remaining" value={stats.remaining} color="violet" />
         </div>
 
-        {/* ACTION BUTTONS */}
-        <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="mt-12 flex gap-5 justify-center flex-wrap">
           <button
             onClick={handleCallNext}
             disabled={stats.remaining === 0}
-            className="px-12 py-4 rounded-2xl bg-blue-600 text-white font-semibold hover:bg-slate-900 transition shadow-xl disabled:opacity-50"
+            className="px-12 py-4 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-semibold hover:opacity-90 disabled:opacity-40"
           >
             Call Next
           </button>
@@ -221,7 +200,7 @@ export default function StaffDashboard() {
           <button
             onClick={handleCompleteTicket}
             disabled={!currentTicket || completing}
-            className="px-12 py-4 rounded-2xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition shadow-xl disabled:opacity-50"
+            className="px-12 py-4 rounded-2xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 disabled:opacity-40"
           >
             {completing ? "Completing…" : "Complete Ticket"}
           </button>
@@ -230,50 +209,47 @@ export default function StaffDashboard() {
 
       {/* SETTINGS + QR */}
       <section className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20">
+
         {/* QUEUE SETTINGS */}
         <div className="space-y-10">
-          <div>
-            <h3 className="text-lg font-semibold text-slate-900">
-              Queue Settings
-            </h3>
-            <p className="text-sm text-slate-500">
-              Availability and capacity controls
-            </p>
-          </div>
-
-          <div className="flex items-center justify-between bg-white/70 p-6 rounded-2xl shadow border">
+          <div className="bg-white/5 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-xl flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-800">
-                Queue Status
-              </p>
-              <p className="text-xs text-slate-500">
-                Allow or pause new entries
-              </p>
+              <p className="text-sm font-medium text-slate-200">Queue Status</p>
+              <div className={`mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold
+                ${isQueueOpen ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}
+              `}>
+                <span className={`w-2 h-2 rounded-full ${isQueueOpen ? "bg-emerald-400" : "bg-red-400"}`} />
+                {isQueueOpen ? "Queue Open" : "Queue Closed"}
+              </div>
             </div>
+
             <button
               onClick={handleToggleQueue}
-              className="px-6 py-3 rounded-xl bg-red-500/80 text-white font-semibold hover:bg-red-600 transition"
+              className={`px-6 py-3 rounded-xl text-white font-semibold
+                ${isQueueOpen
+                  ? "bg-red-600 hover:bg-red-700"
+                  : "bg-emerald-600 hover:bg-emerald-700"}
+              `}
             >
-              Open / Close
+              {isQueueOpen ? "Close Queue" : "Open Queue"}
             </button>
           </div>
 
-          <div className="bg-white/70 p-6 rounded-2xl shadow border space-y-4">
-            <p className="text-sm font-medium text-slate-800">
+          <div className="bg-white/5 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-xl">
+            <p className="text-sm font-medium text-slate-200 mb-4">
               Max Queue Limit
             </p>
-
             <div className="flex gap-4">
               <input
                 type="number"
-                placeholder="Enter limit"
                 value={increaseBy}
                 onChange={(e) => setIncreaseBy(e.target.value)}
-                className="flex-1 px-5 py-3 rounded-xl border border-slate-300 bg-white"
+                className="flex-1 px-5 py-3 rounded-xl bg-black/30 border border-white/10 text-slate-100 placeholder-slate-400"
+                placeholder="Enter limit"
               />
               <button
                 onClick={handleIncreaseLimit}
-                className="px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-slate-900 transition"
+                className="px-6 py-3 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700"
               >
                 Apply
               </button>
@@ -281,47 +257,37 @@ export default function StaffDashboard() {
           </div>
         </div>
 
-        {/* GUEST QR */}
-        <div className="relative overflow-hidden rounded-3xl p-8 shadow-xl border border-blue-400 bg-gradient-to-b from-white/90 via-[#f5f8fc] to-[#eef2f8] text-center">
-          <div className="relative space-y-6">
-            <h3 className="text-lg font-semibold text-slate-900">
-              Guest Queue Access
-            </h3>
+        {/* QR SECTION */}
+        <div
+          ref={qrSectionRef}
+          className="rounded-3xl p-8 shadow-xl border border-white/10 bg-white/5 backdrop-blur-xl text-center"
+        >
+          <h3 className="text-lg font-semibold mb-6 text-slate-100">
+            Guest Queue Access
+          </h3>
 
-            {!qrData ? (
-              <div className="space-y-4">
-                <p className="text-sm text-slate-500">
-                  Generate a QR for visitors to join
-                </p>
-                <button
-                  onClick={handleGenerateQR}
-                  disabled={qrLoading}
-                  className="px-10 py-3 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition disabled:opacity-50"
-                >
-                  {qrLoading ? "Generating…" : "Generate QR"}
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="rounded-2xl border border-slate-300 bg-white p-4 mx-auto w-56">
-                  <img src={qrData.qrCode} alt="Guest QR" />
-                </div>
-
-                <div className="px-4 py-3 rounded-xl bg-slate-100 border border-slate-300 text-sm break-all">
-                  {qrData.joinUrl}
-                </div>
-              </>
-            )}
-          </div>
+          {!qrData ? (
+            <button
+              onClick={handleGenerateQR}
+              disabled={qrLoading}
+              className="px-10 py-3 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700"
+            >
+              {qrLoading ? "Generating…" : "Generate QR"}
+            </button>
+          ) : (
+            <>
+              <img src={qrData.qrCode} alt="QR" className="mx-auto w-56" />
+              <p className="mt-4 text-xs break-all text-slate-400">
+                {qrData.joinUrl}
+              </p>
+            </>
+          )}
         </div>
       </section>
 
-      {/* MESSAGE TOAST */}
       {message && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2">
-          <div className="px-6 py-3 rounded-xl bg-green-100 border border-green-400 text-green-800 shadow-lg">
-            {message}
-          </div>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-emerald-500/20 text-emerald-200 px-6 py-3 rounded-xl border border-emerald-500/30 backdrop-blur">
+          {message}
         </div>
       )}
     </div>
@@ -333,19 +299,15 @@ export default function StaffDashboard() {
 ========================= */
 function StatCard({ label, value, color = "slate" }) {
   const colorMap = {
-    slate: "text-slate-900",
-    blue: "text-blue-600",
-    emerald: "text-emerald-600",
+    slate: "text-slate-100",
+    violet: "text-violet-400",
+    emerald: "text-emerald-400",
   };
 
   return (
-    <div className="px-6 py-4 rounded-2xl bg-white shadow border text-center min-w-[120px]">
-      <p className="text-xs text-slate-500 uppercase tracking-wide">
-        {label}
-      </p>
-      <p className={`text-2xl font-bold ${colorMap[color]}`}>
-        {value}
-      </p>
+    <div className="px-6 py-4 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 shadow text-center min-w-[120px]">
+      <p className="text-xs uppercase text-slate-400">{label}</p>
+      <p className={`text-2xl font-bold ${colorMap[color]}`}>{value}</p>
     </div>
   );
 }

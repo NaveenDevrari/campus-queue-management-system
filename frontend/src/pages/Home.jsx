@@ -29,6 +29,8 @@ export default function Home() {
         "Join department queues remotely and track your position in real time.",
       extra:
         "Avoid physical lines, get notified when it’s your turn, and save valuable time.",
+      glow: "shadow-blue-500/30 ring-blue-500/30",
+      badge: "bg-blue-600",
     },
     {
       name: "Staff",
@@ -38,6 +40,8 @@ export default function Home() {
         "Manage student queues efficiently with live updates and controls.",
       extra:
         "Call the next student, open or close queues, and reduce congestion.",
+      glow: "shadow-emerald-500/30 ring-emerald-500/30",
+      badge: "bg-emerald-600",
     },
     {
       name: "Admin",
@@ -47,61 +51,44 @@ export default function Home() {
         "Monitor and control the entire queue system across departments.",
       extra:
         "Configure departments, manage access, and oversee system performance.",
+      glow: "shadow-violet-500/30 ring-violet-500/30",
+      badge: "bg-violet-600",
     },
   ];
 
   return (
-    <div className="bg-[#eef2f6] relative overflow-hidden">
+    <div className="relative overflow-hidden bg-[#0a1330] text-slate-100">
 
-      {/* ===== FLOATING BLUE BALLS (BACKGROUND EFFECT) ===== */}
-      <FloatingBlueBall size={140} color="bg-blue-400/50" speed={1} />
-      <FloatingBlueBall size={100} color="bg-indigo-400/45" speed={0.8} />
-      <FloatingBlueBall size={180} color="bg-blue-300/40" speed={0.6} />
+      {/* FLOATING BACKGROUND */}
+      <FloatingBlueBall size={140} color="bg-blue-500/20" speed={1} />
+      <FloatingBlueBall size={100} color="bg-indigo-500/20" speed={0.8} />
+      <FloatingBlueBall size={180} color="bg-violet-500/15" speed={0.6} />
 
-      {/* ================= HERO ================= */}
-      <section className="relative min-h-[70vh] px-6 pt-12 overflow-hidden bg-[#eef2f6]">
+      {/* HERO */}
+      <section className="relative min-h-[70vh] px-6 pt-16 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0a1330] via-[#0f1f4d] to-[#141b3a]" />
 
-        {/* Light animated background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-100 via-white to-indigo-100 animate-pulse" />
+        <div className="absolute -top-40 -left-40 w-[520px] h-[520px] bg-blue-700/25 rounded-full blur-3xl" />
+        <div className="absolute top-32 -right-40 w-[420px] h-[420px] bg-violet-700/25 rounded-full blur-3xl" />
 
-        {/* Soft background glows */}
-        <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-blue-200/40 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute top-40 -right-32 w-[400px] h-[400px] bg-indigo-200/40 rounded-full blur-3xl animate-pulse" />
-
-        {/* Content */}
-        <div className="relative max-w-6xl mx-auto text-center mt-6">
-
-          {/* Welcome heading */}
-          <h2
-            className="
-              text-2xl md:text-3xl font-extrabold mb-2
-              bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700
-              bg-clip-text text-transparent
-            "
-          >
+        <div className="relative max-w-6xl mx-auto text-center">
+          <h2 className="text-2xl md:text-3xl font-extrabold mb-2 text-indigo-300">
             Hey, Welcome to
           </h2>
 
-          {/* Main heading */}
-          <h1
-            className="
-              text-4xl md:text-5xl font-extrabold mb-6
-              bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700
-              bg-clip-text text-transparent
-              min-h-[3.5rem]
-            "
-          >
+          <h1 className="text-4xl md:text-5xl font-extrabold mb-6 min-h-[3.5rem]
+            bg-gradient-to-r from-violet-500 via-fuchsia-400 to-indigo-400
+            bg-clip-text text-transparent">
             {displayText}
           </h1>
 
           {showSubtitle && (
             <>
-              <p className="text-lg text-slate-800 max-w-4xl mx-auto leading-relaxed">
+              <p className="text-lg text-slate-300 max-w-4xl mx-auto leading-relaxed">
                 A modern digital queue system that removes physical waiting lines and
                 simplifies how students, staff, and departments interact on campus.
               </p>
-
-              <p className="mt-3 text-base text-slate-700 max-w-2xl mx-auto leading-relaxed">
+              <p className="mt-3 text-base text-slate-400 max-w-2xl mx-auto leading-relaxed">
                 Join queues remotely, manage service flow efficiently, and deliver a
                 faster, more transparent campus experience.
               </p>
@@ -110,15 +97,15 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ================= ROLES ================= */}
-      <section className="px-6 pt-14 pb-0">
+      {/* ROLES */}
+      <section className="px-6 pt-24 pb-0">
         <div className="max-w-6xl mx-auto">
 
-          <div className="text-center mb-14">
-            <h2 className="text-3xl font-bold text-slate-900 mb-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-slate-100 mb-4">
               Goodbye lines — hello efficiency
             </h2>
-            <p className="text-slate-600 max-w-2xl mx-auto">
+            <p className="text-slate-400 max-w-2xl mx-auto">
               Campus Queue adapts to different users while keeping the experience
               simple, fast, and reliable for everyone.
             </p>
@@ -126,54 +113,68 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
             {roles.map((role, idx) => (
-              <Link
+              <div
                 key={role.name}
-                to={role.path}
                 className={`
-                  group rounded-3xl p-10
-                  bg-gradient-to-b from-blue-50 via-white to-blue-100
-                  border border-blue-500/40
-                  shadow-lg transition-all
-                  hover:-translate-y-1 hover:shadow-2xl
-                  flex flex-col justify-between
-                  ${idx === 1 ? "md:mt-16 md:h-[470px]" : "h-[440px]"}
+                  group relative rounded-3xl p-10 pt-16
+                  bg-gradient-to-b from-white/6 via-white/4 to-transparent
+                  border border-white/15
+                  backdrop-blur-xl
+                  ring-1 ${role.glow}
+                  shadow-xl ${role.glow}
+                  transition-all duration-300
+                  hover:animate-cardBlink
+                  flex flex-col
+                  ${idx === 1 ? "md:h-[450px]" : "h-[450px]"}
                 `}
               >
-                <div className="flex justify-center mb-6">
-                  <div className="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center">
+                {/* PERMANENT SHIMMER */}
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-tr from-white/6 via-transparent to-white/6 opacity-100" />
+
+                <div className="relative flex justify-center mb-6">
+                  <div className={`w-16 h-16 rounded-2xl ${role.badge} flex items-center justify-center shadow-xl`}>
                     <span className="text-white text-3xl font-bold">
                       {role.label}
                     </span>
                   </div>
                 </div>
 
-                <div className="text-center">
-                  <h3 className="text-xl font-semibold text-slate-900 mb-3">
+                <div className="relative text-center">
+                  <h3 className="text-xl font-semibold text-slate-100 mb-10">
                     {role.name}
                   </h3>
-                  <p className="text-slate-700 text-sm mb-3">{role.desc}</p>
-                  <p className="text-slate-500 text-xs">{role.extra}</p>
+                  <p className="text-slate-300 text-sm mb-3">{role.desc}</p>
+                  <p className="text-slate-400 text-xs">{role.extra}</p>
                 </div>
-
-                <p className="text-blue-700 font-medium text-sm text-center mt-6">
-                  Click to access {role.name} dashboard →
-                </p>
-              </Link>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ================= LOGIN HINT ================= */}
-      <section className="pt-10 pb-0 text-center">
-        <p className="text-slate-600">
+      {/* LOGIN */}
+      <section className="pt-14 pb-12 text-center">
+        <p className="text-slate-400">
           Already registered?{" "}
-          <Link to="/login" className="text-blue-600 font-medium hover:underline">
+          <Link to="/login" className="text-violet-400 font-medium hover:underline">
             Login here
           </Link>
         </p>
       </section>
 
+      {/* BLINK ANIMATION */}
+      <style>
+        {`
+          @keyframes cardBlink {
+            0% { box-shadow: 0 0 0 rgba(255,255,255,0); }
+            50% { box-shadow: 0 0 25px rgba(255,255,255,0.25); }
+            100% { box-shadow: 0 0 0 rgba(255,255,255,0); }
+          }
+          .hover\\:animate-cardBlink:hover {
+            animation: cardBlink 0.6s ease-in-out;
+          }
+        `}
+      </style>
     </div>
   );
 }

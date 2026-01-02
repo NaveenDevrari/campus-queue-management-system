@@ -1,4 +1,5 @@
 import { Routes, Route, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -23,32 +24,66 @@ import FloatingBlueBall from "./components/FloatingBlueBall";
 function Layout({ children }) {
   const location = useLocation();
 
-  // Pages where Navbar & Footer should NOT appear
-  const hideLayoutRoutes = [
-    "/login",
-    "/signup",
-    "/guest/join",
-    "/guest/ticket",
-  ];
+  /* =========================
+     THEME (UNCHANGED)
+  ========================= */
+  const [theme, setTheme] = useState(
+    localStorage.getItem("theme") || "dark"
+  );
 
-  const hideLayout = hideLayoutRoutes.includes(location.pathname);
+  useEffect(() => {
+    const root = document.documentElement;
+
+    if (theme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  /* =========================
+     ✅ HASH ROUTER SAFE CHECKS
+  ========================= */
+  const hash = location.hash || "#/";
+
+  const isGuestRoute =
+    hash.startsWith("#/guest/join") ||
+    hash.startsWith("#/guest/ticket");
+
+  const isAuthRoute =
+    hash.startsWith("#/login") ||
+    hash.startsWith("#/signup");
+
+  const hideLayout = isGuestRoute || isAuthRoute;
+
+  // ✅ FIXED
+  const showFooter = hash === "#/" || hash === "" || hash === "#";
 
   return (
-    <div className="relative min-h-screen bg-[#eef2f6] overflow-hidden">
+    <div className="relative min-h-screen bg-[#eef2f6] dark:bg-[#0b1220] overflow-hidden transition-colors duration-300">
 
-      {/* ===== GLOBAL FLOATING BACKGROUND (ALL PAGES) ===== */}
-      <FloatingBlueBall size={140} color="bg-blue-400/50" speed={1} />
-      <FloatingBlueBall size={100} color="bg-indigo-400/45" speed={0.8} />
-      <FloatingBlueBall size={180} color="bg-blue-300/40" speed={0.6} />
+      {/* ===== GLOBAL FLOATING BACKGROUND ===== */}
+      {!hideLayout && (
+        <>
+          <FloatingBlueBall size={140} color="bg-blue-400/50" speed={1} />
+          <FloatingBlueBall size={100} color="bg-indigo-400/45" speed={0.8} />
+          <FloatingBlueBall size={180} color="bg-blue-300/40" speed={0.6} />
+        </>
+      )}
 
       {/* ===== LAYOUT UI ===== */}
       {!hideLayout && <Navbar />}
       {children}
-      {!hideLayout && <Footer />}
+      {!hideLayout && showFooter && <Footer />}
     </div>
   );
 }
 
+/* ==============================
+   App Routes
+================================ */
 export default function App() {
   return (
     <Layout>
@@ -62,6 +97,9 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
+        {/* =======================
+            Guest Routes
+        ======================== */}
         <Route path="/guest/join" element={<GuestJoin />} />
         <Route path="/guest/ticket" element={<GuestTicket />} />
 

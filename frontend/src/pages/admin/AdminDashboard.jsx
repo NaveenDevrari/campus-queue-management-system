@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   createDepartment,
   getDepartments,
@@ -21,9 +21,11 @@ export default function AdminDashboard() {
 
   const [search, setSearch] = useState("");
 
-  /* ===========================
+  const departmentsOverviewRef = useRef(null);
+
+  /* =========================
      FETCH DATA
-  ============================ */
+  ========================= */
   useEffect(() => {
     fetchDepartments();
     fetchStaff();
@@ -47,9 +49,33 @@ export default function AdminDashboard() {
     }
   };
 
-  /* ===========================
-     CREATE DEPARTMENT
-  ============================ */
+  /* =========================
+     NAVBAR → SCROLL
+  ========================= */
+  useEffect(() => {
+    const handleScrollToDepartments = () => {
+      departmentsOverviewRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    };
+
+    window.addEventListener(
+      "scrollToDepartmentsOverview",
+      handleScrollToDepartments
+    );
+
+    return () => {
+      window.removeEventListener(
+        "scrollToDepartmentsOverview",
+        handleScrollToDepartments
+      );
+    };
+  }, []);
+
+  /* =========================
+     ACTIONS
+  ========================= */
   const handleCreateDepartment = async () => {
     if (!name.trim()) return setMessage("Department name is required");
 
@@ -67,9 +93,6 @@ export default function AdminDashboard() {
     }
   };
 
-  /* ===========================
-     ASSIGN STAFF
-  ============================ */
   const handleAssignStaff = async () => {
     if (!selectedStaff || !selectedDepartment) {
       return setMessage("Select both staff and department");
@@ -99,28 +122,28 @@ export default function AdminDashboard() {
     dept.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  /* ===========================
+  /* =========================
      UI
-  ============================ */
+  ========================= */
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#eef2f6] via-[#e6ecf5] to-[#dfe7f1] px-6 pt-10 pb-20">
+    <div className="min-h-screen bg-gradient-to-b from-[#0a1330] via-[#0f1f4d] to-[#141b3a] px-6 pt-12 pb-24 text-slate-100">
 
       {/* HEADER */}
-      <section className="max-w-6xl mx-auto mb-16">
-        <h1 className="text-4xl font-bold text-slate-900">
+      <section className="max-w-6xl mx-auto mb-20">
+        <h1 className="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-violet-400 via-fuchsia-400 to-indigo-400 bg-clip-text text-transparent">
           Admin Dashboard
         </h1>
-        <p className="text-slate-600 mt-2">
+        <p className="text-slate-300 mt-4">
           System-level configuration and control
         </p>
       </section>
 
-      {/* MAIN ADMIN GRID */}
-      <section className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 mb-24">
+      {/* MAIN GRID */}
+      <section className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 mb-28">
 
-        {/* LEFT — CREATE DEPARTMENT (NORMAL FORM) */}
-        <div className="animate-fadeInUp">
-          <h2 className="text-2xl font-semibold text-slate-900 mb-6">
+        {/* CREATE DEPARTMENT */}
+        <div>
+          <h2 className="text-2xl font-semibold text-violet-300 mb-6">
             Create Department
           </h2>
 
@@ -129,70 +152,54 @@ export default function AdminDashboard() {
               placeholder="Department name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="
-                w-full px-5 py-4 rounded-xl
-                border border-slate-300 bg-white
-                focus:outline-none focus:ring-2 focus:ring-blue-600/30
-                transition
-              "
+              className="w-full px-5 py-4 rounded-xl bg-white/10 border border-white/10 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40"
             />
 
             <input
               placeholder="Description (optional)"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="
-                w-full px-5 py-4 rounded-xl
-                border border-slate-300 bg-white
-                focus:outline-none focus:ring-2 focus:ring-blue-600/30
-                transition
-              "
+              className="w-full px-5 py-4 rounded-xl bg-white/10 border border-white/10 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40"
             />
 
             <button
               onClick={handleCreateDepartment}
               disabled={loading}
-              className="
-                px-6 py-4 rounded-xl
-                bg-blue-700 text-white font-semibold
-                hover:bg-slate-800 transition
-                disabled:opacity-50
-              "
+              className="px-6 py-4 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-semibold hover:from-violet-700 hover:to-fuchsia-700 transition disabled:opacity-50"
             >
               {loading ? "Creating..." : "Create Department"}
             </button>
           </div>
         </div>
 
-        {/* RIGHT — ASSIGN STAFF (FEATURE CARD) */}
-        <div className="
-          relative overflow-hidden bg-[#f4f8ff]
-          rounded-3xl p-8 border border-blue-400
-          shadow-lg transition-all duration-300
-          hover:-translate-y-1 hover:shadow-2xl
-        ">
-          <div className="absolute inset-0 bg-gradient-to-b from-indigo-100/50 via-transparent to-transparent animate-cardFlow pointer-events-none" />
+        {/* ASSIGN STAFF */}
+        <div>
+          {/* 🔥 EYE-CATCHING NOTE CARD */}
+          <div className="mb-6 rounded-2xl border-l-4 border-amber-400
+                          bg-gradient-to-r from-amber-500/20 to-orange-500/10
+                          backdrop-blur px-5 py-4
+                          shadow-lg shadow-amber-500/20">
+            <p className="text-sm text-amber-200 leading-relaxed">
+              ⚠️ <b>Important:</b> To change or update the staff assigned to a
+              department, use this section. Assigning a new staff member will
+              <b> replace the currently assigned one</b>.
+            </p>
+          </div>
 
-          <div className="relative">
-            <h3 className="text-lg font-semibold text-slate-900 mb-6">
+          <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-xl">
+            <h3 className="text-lg font-semibold text-violet-300 mb-6">
               Assign Staff to Department
             </h3>
-
-            <div className="mb-6 rounded-xl bg-amber-50 border border-amber-300 px-4 py-3 text-sm text-amber-800">
-              <strong>Note:</strong> One staff member can belong to only one
-              department. Reassigning replaces the previous assignment.
-            </div>
 
             <select
               value={selectedStaff}
               onChange={(e) => setSelectedStaff(e.target.value)}
-              className="w-full px-5 py-4 mb-4 rounded-xl border border-slate-300 bg-white"
+              className="w-full px-5 py-4 mb-4 rounded-xl bg-white/10 border border-white/10 text-slate-100"
             >
               <option value="">Select Staff</option>
               {staff.map((s) => (
-                <option key={s._id} value={s._id}>
+                <option key={s._id} value={s._id} className="text-black">
                   {s.fullName} ({s.email})
-                  {s.department ? ` — ${s.department.name}` : ""}
                 </option>
               ))}
             </select>
@@ -200,11 +207,11 @@ export default function AdminDashboard() {
             <select
               value={selectedDepartment}
               onChange={(e) => setSelectedDepartment(e.target.value)}
-              className="w-full px-5 py-4 mb-6 rounded-xl border border-slate-300 bg-white"
+              className="w-full px-5 py-4 mb-6 rounded-xl bg-white/10 border border-white/10 text-slate-100"
             >
               <option value="">Select Department</option>
               {departments.map((d) => (
-                <option key={d._id} value={d._id}>
+                <option key={d._id} value={d._id} className="text-black">
                   {d.name}
                 </option>
               ))}
@@ -213,12 +220,7 @@ export default function AdminDashboard() {
             <button
               onClick={handleAssignStaff}
               disabled={loading}
-              className="
-                w-full py-4 rounded-2xl
-                bg-emerald-600 text-white font-semibold
-                hover:bg-emerald-700 transition
-                disabled:opacity-50
-              "
+              className="w-full py-4 rounded-2xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition disabled:opacity-50"
             >
               {loading ? "Assigning..." : "Assign Staff"}
             </button>
@@ -227,103 +229,73 @@ export default function AdminDashboard() {
       </section>
 
       {/* DEPARTMENTS OVERVIEW */}
-      <section className="max-w-6xl mx-auto mb-20">
-        <h2 className="text-2xl font-semibold text-slate-900 mb-6">
+      <section ref={departmentsOverviewRef} className="max-w-6xl mx-auto mb-24">
+        <h2 className="text-2xl font-semibold text-violet-300 mb-8">
           Departments Overview
         </h2>
 
-        {/* CENTERED SEARCH */}
-        <div className="flex justify-center mb-10">
-          <div className="
-            flex items-center gap-3
-            px-4 py-2.5 w-full max-w-md
-            rounded-xl bg-white/80
-            border border-blue-300
-            shadow-sm
-            focus-within:ring-2 focus-within:ring-blue-500/30
-            transition
-          ">
-            <span className="text-blue-500 text-lg">🔍</span>
+        {/* SEARCH */}
+        <div className="flex justify-center mb-12">
+          <div className="flex items-center gap-3 px-4 py-3 w-full max-w-md rounded-xl bg-white/10 border border-white/10 backdrop-blur">
+            <span className="text-slate-400 text-lg">🔍</span>
             <input
               type="text"
               placeholder="Search department..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-transparent text-slate-800 placeholder-slate-400 focus:outline-none"
+              className="w-full bg-transparent text-slate-100 placeholder-slate-400 focus:outline-none"
             />
           </div>
         </div>
 
         <div className="space-y-4">
-          {filteredDepartments.length === 0 ? (
-            <p className="text-slate-600 text-center">
-              No matching departments found.
-            </p>
-          ) : (
-            filteredDepartments.map((dept) => (
+          {filteredDepartments.map((dept) => {
+            const currentStaff =
+              dept.staff && dept.staff.length > 0
+                ? dept.staff[dept.staff.length - 1]
+                : null;
+
+            return (
               <div
                 key={dept._id}
-                className="bg-white/90 rounded-2xl p-6 border border-slate-300 shadow transition hover:shadow-lg"
+                className="bg-white/5 backdrop-blur rounded-2xl p-6 border border-white/10 shadow"
               >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-semibold text-slate-900">
-                      {dept.name}
-                    </h3>
-                    <p className="text-sm text-slate-600">
-                      {dept.description || "No description"}
-                    </p>
-                  </div>
-                  <span className="text-sm text-slate-500">
-                    {dept.staff.length} Staff
-                  </span>
-                </div>
+                <h3 className="font-semibold text-slate-100">
+                  {dept.name}
+                </h3>
 
-                <div className="mt-4 text-sm text-slate-700">
-                  {dept.staff.length > 0
-                    ? dept.staff.map((s) => s.fullName).join(", ")
-                    : "No staff assigned"}
+                <p className="text-sm text-slate-400 mb-3">
+                  {dept.description || "No description"}
+                </p>
+
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-400 mb-2">
+                    Current Staff
+                  </p>
+
+                  {currentStaff ? (
+                    <p className="text-sm text-slate-300">
+                      {currentStaff.fullName} ({currentStaff.email})
+                    </p>
+                  ) : (
+                    <p className="text-sm text-slate-500">
+                      No staff assigned
+                    </p>
+                  )}
                 </div>
               </div>
-            ))
-          )}
+            );
+          })}
         </div>
       </section>
 
       {message && (
         <div className="mt-12 flex justify-center">
-          <div className="px-6 py-3 rounded-xl bg-green-100 border border-green-400 text-green-800 shadow">
+          <div className="px-6 py-3 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 shadow">
             {message}
           </div>
         </div>
       )}
-
-      {/* ANIMATIONS */}
-      <style>
-        {`
-          @keyframes cardFlow {
-            0% { transform: translateY(-100%); }
-            100% { transform: translateY(100%); }
-          }
-          .animate-cardFlow {
-            animation: cardFlow 8s linear infinite;
-          }
-
-          @keyframes fadeInUp {
-            0% {
-              opacity: 0;
-              transform: translateY(12px);
-            }
-            100% {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-          .animate-fadeInUp {
-            animation: fadeInUp 0.6s ease-out both;
-          }
-        `}
-      </style>
     </div>
   );
 }

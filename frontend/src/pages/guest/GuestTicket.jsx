@@ -28,7 +28,7 @@ export default function GuestTicket() {
   }, []);
 
   /* ==========================
-     RESTORE TICKET (FIXED)
+     RESTORE TICKET (UNCHANGED)
   ========================== */
   useEffect(() => {
     const restoreTicket = async () => {
@@ -87,7 +87,7 @@ export default function GuestTicket() {
   }, [ticket]);
 
   /* ==========================
-     CANCEL TICKET (FIXED)
+     CANCEL TICKET (UNCHANGED)
   ========================== */
   const handleCancel = async () => {
     const guestToken = localStorage.getItem("guestToken");
@@ -121,11 +121,19 @@ export default function GuestTicket() {
   }, [message]);
 
   /* ==========================
+     ESTIMATED TIME (NEW)
+  ========================== */
+  const estimatedTime =
+    ticket?.position && ticket.position > 0
+      ? ticket.position * 5
+      : null;
+
+  /* ==========================
      UI STATES
   ========================== */
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-slate-600">
+      <div className="min-h-screen flex items-center justify-center text-slate-300 bg-[#0b1220]">
         Loading your ticket…
       </div>
     );
@@ -133,7 +141,7 @@ export default function GuestTicket() {
 
   if (!ticket) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-slate-600">
+      <div className="min-h-screen flex items-center justify-center text-slate-300 bg-[#0b1220]">
         No active ticket found.
       </div>
     );
@@ -143,22 +151,33 @@ export default function GuestTicket() {
      UI
   ========================== */
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#eef2f6] via-[#e6ecf5] to-[#dfe7f1] px-4 py-10 flex justify-center">
-      <div className="w-full max-w-md">
+    <div className="relative min-h-screen flex justify-center px-4 py-12 overflow-hidden text-slate-100">
+
+      {/* BACKGROUND */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0a1330] via-[#0f1f4d] to-[#141b3a]" />
+
+      {/* GLOWS */}
+      <div className="absolute -top-40 -left-40 w-[500px] h-[500px] bg-violet-600/25 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 -right-40 w-[400px] h-[400px] bg-indigo-600/25 rounded-full blur-3xl" />
+
+      <div className="relative z-10 w-full max-w-md">
+
+        {/* HEADER */}
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-slate-900">
+          <h1 className="text-3xl font-bold text-blue-100">
             Your Queue Ticket
           </h1>
-          <p className="text-slate-600 mt-2">
+          <p className="text-slate-400 mt-2">
             Please wait until your number is called
           </p>
         </div>
 
+        {/* NOW SERVING */}
         <div className="text-center mb-12">
-          <p className="uppercase tracking-widest text-sm text-slate-500 mb-3">
+          <p className="uppercase tracking-widest text-sm text-slate-400 mb-3">
             Now Serving
           </p>
-          <div className="text-7xl font-extrabold text-blue-600 leading-none">
+          <div className="text-7xl font-extrabold text-blue-500 leading-none">
             {currentServing || "--"}
           </div>
 
@@ -169,32 +188,43 @@ export default function GuestTicket() {
           )}
         </div>
 
-        <div className="bg-white/90 rounded-3xl p-8 shadow-xl border border-slate-300">
-          <h3 className="text-lg font-semibold text-slate-900 mb-6 text-center">
+        {/* TICKET CARD */}
+        <div className="rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 p-8 shadow-[0_30px_90px_rgba(0,0,0,0.55)]">
+          <h3 className="text-lg font-semibold text-blue-100 mb-6 text-center">
             Ticket Details
           </h3>
 
-          <div className="grid grid-cols-2 gap-6 text-slate-700">
+          <div className="grid grid-cols-2 gap-6 text-slate-300">
             <div>
-              <p className="text-xs text-slate-500">Ticket Number</p>
-              <p className="text-2xl font-bold text-blue-600">
+              <p className="text-xs text-slate-400">Ticket Number</p>
+              <p className="text-2xl font-bold text-blue-500">
                 {ticket.ticketNumber}
               </p>
             </div>
 
             <div>
-              <p className="text-xs text-slate-500">Department</p>
+              <p className="text-xs text-slate-400">Department</p>
               <p className="font-semibold">{ticket.department}</p>
             </div>
 
             <div>
-              <p className="text-xs text-slate-500">Status</p>
+              <p className="text-xs text-slate-400">Status</p>
               <p className="font-semibold capitalize">{ticket.status}</p>
             </div>
 
             <div>
-              <p className="text-xs text-slate-500">Position</p>
+              <p className="text-xs text-slate-400">Position</p>
               <p className="font-semibold">{ticket.position}</p>
+            </div>
+
+            {/* ✅ ESTIMATED TIME */}
+            <div className="col-span-2 text-center mt-2">
+              <p className="text-xs text-slate-400">
+                Estimated Waiting Time
+              </p>
+              <p className="text-lg font-semibold text-indigo-400">
+                {estimatedTime ? `≈ ${estimatedTime} minutes` : "--"}
+              </p>
             </div>
           </div>
 
@@ -208,7 +238,7 @@ export default function GuestTicket() {
         </div>
 
         {message && (
-          <div className="mt-6 text-center text-sm text-red-600">
+          <div className="mt-6 text-center text-sm text-red-400">
             {message}
           </div>
         )}

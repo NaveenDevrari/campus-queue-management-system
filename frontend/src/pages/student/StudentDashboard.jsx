@@ -30,15 +30,9 @@ export default function StudentDashboard() {
       setNowServing(data.ticketNumber);
     };
 
-    // ✅ FIXED: Only reset if MY ticket is completed
     const onTicketCompleted = (data) => {
-      if (
-        ticketInfo &&
-        data.ticketNumber === ticketInfo.ticketNumber
-      ) {
-        resetState(
-          "Your ticket has been completed. You may join again."
-        );
+      if (ticketInfo && data.ticketNumber === ticketInfo.ticketNumber) {
+        resetState("Your ticket has been completed. You may join again.");
       }
     };
 
@@ -144,13 +138,17 @@ export default function StudentDashboard() {
      UI
   ========================= */
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#eef2f6] via-[#e6ecf5] to-[#dfe7f1] px-6 pt-8 pb-16">
+    <div className="min-h-screen bg-gradient-to-b from-[#0a1330] via-[#0f1f4d] to-[#141b3a] px-6 pt-10 pb-20 text-slate-100">
+
       {/* HEADER */}
       <section className="max-w-6xl mx-auto mb-16">
-        <h1 className="text-4xl font-bold text-slate-900">
+        <h1 className="text-4xl font-extrabold
+    bg-gradient-to-r
+    from-violet-400 via-fuchsia-300 to-indigo-400
+    bg-clip-text text-transparent">
           Student Dashboard
         </h1>
-        <p className="text-slate-600 mt-3">
+        <p className="text-slate-300 mt-3">
           Track your queue and move only when it’s your turn.
         </p>
       </section>
@@ -158,7 +156,7 @@ export default function StudentDashboard() {
       {/* QUEUE STATUS */}
       {!queueOpen && (
         <div className="max-w-6xl mx-auto mb-6">
-          <div className="px-6 py-4 rounded-xl bg-red-100 border border-red-400 text-red-800 font-medium">
+          <div className="px-6 py-4 rounded-xl bg-red-500/15 border border-red-500/40 text-red-300 font-medium">
             🚫 Queue is currently closed. Please wait.
           </div>
         </div>
@@ -166,7 +164,7 @@ export default function StudentDashboard() {
 
       {queueLimit !== null && (
         <div className="max-w-6xl mx-auto mb-10">
-          <div className="px-6 py-4 rounded-xl bg-blue-100 border border-blue-400 text-blue-800 font-medium">
+          <div className="px-6 py-4 rounded-xl bg-blue-500/15 border border-blue-500/40 text-blue-300 font-medium">
             ℹ️ Queue limit: {queueLimit} students
           </div>
         </div>
@@ -174,16 +172,16 @@ export default function StudentDashboard() {
 
       {/* NOW SERVING */}
       <section className="max-w-6xl mx-auto mb-20 text-center">
-        <p className="uppercase tracking-widest text-sm text-slate-500 mb-3">
+        <p className="uppercase tracking-widest text-sm text-slate-400 mb-3">
           Now Serving
         </p>
 
-        <div className="text-[96px] font-extrabold text-blue-600 leading-none">
+        <div className="text-[96px] font-extrabold text-blue-400 leading-none">
           {nowServing}
         </div>
 
         {isMyTurn && (
-          <div className="mt-5 inline-flex items-center gap-3 px-8 py-4 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xl shadow-[0_0_30px_rgba(59,130,246,0.45)] animate-pulse">
+          <div className="mt-5 inline-flex items-center gap-3 px-8 py-4 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xl shadow-[0_0_30px_rgba(99,102,241,0.45)] animate-pulse">
             🔔 It’s your turn · Move to counter
           </div>
         )}
@@ -191,9 +189,10 @@ export default function StudentDashboard() {
 
       {/* MAIN CONTENT */}
       <section className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20">
+
         {/* JOIN QUEUE */}
         <div>
-          <h3 className="text-lg font-semibold mb-4 text-slate-900">
+          <h3 className="text-lg font-semibold mb-4 text-slate-100">
             Join a Department Queue
           </h3>
 
@@ -201,7 +200,7 @@ export default function StudentDashboard() {
             value={selectedDept}
             onChange={(e) => setSelectedDept(e.target.value)}
             disabled={!!ticketInfo || !queueOpen}
-            className="w-full px-5 py-4 rounded-2xl bg-white/80 border border-slate-300"
+            className="w-full px-5 py-4 rounded-2xl bg-white/90 text-slate-900 border border-slate-300"
           >
             <option value="">Select Department</option>
             {departments.map((dept) => (
@@ -222,28 +221,28 @@ export default function StudentDashboard() {
 
         {/* YOUR TICKET */}
         {ticketInfo && (
-          <div className="relative bg-white/90 rounded-3xl p-10 shadow-2xl border-2 border-blue-600">
-            <h3 className="text-lg font-semibold text-slate-900 mb-6">
+          <div className="relative bg-white/10 backdrop-blur rounded-3xl p-10 shadow-2xl border border-blue-500/40">
+            <h3 className="text-lg font-semibold text-slate-100 mb-6">
               Your Ticket Details
             </h3>
 
-            <div className="grid grid-cols-2 gap-6 text-slate-700">
+            <div className="grid grid-cols-2 gap-6 text-slate-200">
               <div>
-                <p className="text-xs text-slate-500">Ticket Number</p>
-                <p className="text-2xl font-bold text-blue-600">
+                <p className="text-xs text-slate-400">Ticket Number</p>
+                <p className="text-2xl font-bold text-blue-400">
                   {ticketInfo.ticketNumber}
                 </p>
               </div>
 
               <div>
-                <p className="text-xs text-slate-500">Position</p>
+                <p className="text-xs text-slate-400">Position</p>
                 <p className="text-2xl font-bold">
                   {ticketInfo.position}
                 </p>
               </div>
 
               <div>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-400">
                   Estimated Wait
                 </p>
                 <p className="text-2xl font-bold">
@@ -265,7 +264,7 @@ export default function StudentDashboard() {
       {/* MESSAGE */}
       {message && (
         <div className="mt-12 flex justify-center">
-          <div className="px-6 py-3 rounded-xl bg-green-100 border border-green-400 text-green-800 font-medium shadow-md">
+          <div className="px-6 py-3 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 font-medium shadow-md">
             ✅ {message}
           </div>
         </div>
