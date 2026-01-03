@@ -12,6 +12,10 @@ export default function GuestTicket() {
   const [currentServing, setCurrentServing] = useState(null);
   const [message, setMessage] = useState("");
 
+  // ✅ NEW STATES (ONLY FOR YOUR REQUIREMENT)
+  const [ticketCompleted, setTicketCompleted] = useState(false);
+  const [showCompletedPopup, setShowCompletedPopup] = useState(false);
+
   const joinedRef = useRef(false);
 
   /* ==========================
@@ -78,6 +82,10 @@ export default function GuestTicket() {
     socket.on("ticket_completed", () => {
       setCurrentServing(null);
       setIsMyTurn(false);
+
+      // ✅ NEW: MARK COMPLETED + SHOW POPUP
+      setTicketCompleted(true);
+      setShowCompletedPopup(true);
     });
 
     return () => {
@@ -121,7 +129,7 @@ export default function GuestTicket() {
   }, [message]);
 
   /* ==========================
-     ESTIMATED TIME (NEW)
+     ESTIMATED TIME (UNCHANGED)
   ========================== */
   const estimatedTime =
     ticket?.position && ticket.position > 0
@@ -217,7 +225,6 @@ export default function GuestTicket() {
               <p className="font-semibold">{ticket.position}</p>
             </div>
 
-            {/* ✅ ESTIMATED TIME */}
             <div className="col-span-2 text-center mt-2">
               <p className="text-xs text-slate-400">
                 Estimated Waiting Time
@@ -228,13 +235,16 @@ export default function GuestTicket() {
             </div>
           </div>
 
-          <button
-            onClick={handleCancel}
-            disabled={isMyTurn}
-            className="mt-10 w-full py-3 rounded-xl bg-red-500/80 text-white font-semibold hover:bg-red-600 transition disabled:opacity-50"
-          >
-            Cancel Ticket
-          </button>
+          {/* ✅ HIDE CANCEL BUTTON AFTER COMPLETION */}
+          {!ticketCompleted && (
+            <button
+              onClick={handleCancel}
+              disabled={isMyTurn}
+              className="mt-10 w-full py-3 rounded-xl bg-red-500/80 text-white font-semibold hover:bg-red-600 transition disabled:opacity-50"
+            >
+              Cancel Ticket
+            </button>
+          )}
         </div>
 
         {message && (
@@ -243,6 +253,33 @@ export default function GuestTicket() {
           </div>
         )}
       </div>
+
+      {/* ==========================
+          COMPLETED POPUP (NEW)
+      ========================== */}
+      {showCompletedPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#0b1220] border border-white/10 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl">
+            <h2 className="text-2xl font-bold text-emerald-400 mb-4">
+              ✅ Ticket Completed
+            </h2>
+            <p className="text-slate-300 mb-6">
+              Your ticket has been completed.  
+              You may join another queue.
+            </p>
+            <button
+              onClick={() => {
+                localStorage.removeItem("guestToken");
+                socket.disconnect();
+                navigate("/guest/join");
+              }}
+              className="w-full py-3 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition"
+            >
+              Join Another Queue
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
