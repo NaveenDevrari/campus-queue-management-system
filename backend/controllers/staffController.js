@@ -3,6 +3,8 @@ import Ticket from "../models/Ticket.js";
 import User from "../models/User.js";
 import { io } from "../server.js";
 import QRCode from "qrcode";
+import { getCrowdStatusByDepartment } from "../services/crowdStatus.service.js";
+
 
 // ==============================
 // GET STAFF PROFILE
@@ -12,7 +14,7 @@ export const getStaffProfile = async (req, res) => {
     if (req.user.role !== "staff") {
       return res.status(403).json({ message: "Staff only" });
     }
-
+ 
     const staff = await User.findById(req.user.id)
       .populate("department", "name description");
 
@@ -58,16 +60,25 @@ export const callNextTicket = async (req, res) => {
       return res.status(400).json({ message: "No tickets in queue" });
     }
 
+    // 1️⃣ Update ticket
     nextTicket.status = "serving";
     await nextTicket.save();
 
+    // 2️⃣ Update queue
     queue.currentTicket = nextTicket._id;
     await queue.save();
 
-    console.log("📢 Emitting ticket_called to:", departmentId);
-
+    // 3️⃣ Emit ticket called
     io.to(`department_${departmentId}`).emit("ticket_called", {
       ticketNumber: nextTicket.ticketNumber,
+    });
+
+    // 4️⃣ Emit UPDATED crowd status (✅ CORRECT PLACE)
+    const crowdStatus = await getCrowdStatusByDepartment(departmentId);
+
+    io.to(`department_${departmentId}`).emit("queue_crowd_updated", {
+      departmentId,
+      ...crowdStatus,
     });
 
     res.json({
@@ -76,6 +87,7 @@ export const callNextTicket = async (req, res) => {
       ticketId: nextTicket._id,
     });
   } catch (error) {
+    console.error("Call next ticket error:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -85,10 +97,12 @@ export const callNextTicket = async (req, res) => {
 // ==============================
 export const completeTicket = async (req, res) => {
   try {
+    // 🔐 Role check
     if (req.user.role !== "staff") {
       return res.status(403).json({ message: "Staff only" });
     }
 
+    // 👤 Get staff & department
     const staff = await User.findById(req.user.id);
     if (!staff || !staff.department) {
       return res.status(400).json({
@@ -98,10 +112,8 @@ export const completeTicket = async (req, res) => {
 
     const departmentId = staff.department.toString();
 
-    // ✅ DO NOT check isOpen here
-    const queue = await Queue.findOne({
-      department: departmentId,
-    });
+    // 🎯 Find queue for department
+    const queue = await Queue.findOne({ department: departmentId });
 
     if (!queue || !queue.currentTicket) {
       return res.status(400).json({
@@ -109,31 +121,44 @@ export const completeTicket = async (req, res) => {
       });
     }
 
+    // 🎟️ Find current ticket
     const ticket = await Ticket.findById(queue.currentTicket);
     if (!ticket) {
       return res.status(404).json({ message: "Ticket not found" });
     }
 
+    // ✅ Complete ticket
     ticket.status = "completed";
     ticket.servedAt = new Date();
     await ticket.save();
 
+    // 🔄 Clear current ticket from queue
     queue.currentTicket = null;
     await queue.save();
 
+    // 📢 Emit ticket completed event
     io.to(`department_${departmentId}`).emit("ticket_completed", {
       ticketNumber: ticket.ticketNumber,
     });
 
+    // 🚦 Emit UPDATED crowd status (🔥 VERY IMPORTANT)
+    const crowdStatus = await getCrowdStatusByDepartment(departmentId);
+
+    io.to(`department_${departmentId}`).emit("queue_crowd_updated", {
+      departmentId,
+      ...crowdStatus,
+    });
+
+    // ✅ Final response
     res.json({
       message: "Ticket completed successfully",
       ticketNumber: ticket.ticketNumber,
     });
   } catch (error) {
+    console.error("Complete ticket error:", error);
     res.status(500).json({ message: error.message });
   }
 };
-
 
 // ==============================
 // STAFF TOGGLE QUEUE STATUS

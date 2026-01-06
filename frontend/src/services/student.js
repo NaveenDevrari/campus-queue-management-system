@@ -19,3 +19,10 @@ export const cancelQueue = async (departmentId) => {
   const res = await api.post("/student/cancel", { departmentId });
   return res.data;
 };
+
+export const getCrowdStatus = async (departmentId) => {
+  const res = await api.get(
+    `/queue/crowd-status?departmentId=${departmentId}`
+  );
+  return res.data;
+};

@@ -4,6 +4,7 @@ import {
   joinQueue,
   getMyActiveTicket,
   cancelQueue,
+  getCrowdStatus, // ✅ NEW
 } from "../../services/student";
 import { socket } from "../../services/socket";
 
@@ -17,6 +18,9 @@ export default function StudentDashboard() {
 
   const [queueOpen, setQueueOpen] = useState(true);
   const [queueLimit, setQueueLimit] = useState(null);
+
+  // ✅ CROWD STATUS STATE
+  const [crowdStatus, setCrowdStatus] = useState(null);
 
   const joinedRoomRef = useRef(false);
 
@@ -45,11 +49,22 @@ export default function StudentDashboard() {
     const onQueueLimitUpdated = (data) =>
       setQueueLimit(data.maxTickets);
 
+    // ✅ LIVE CROWD UPDATE
+    const onCrowdUpdated = (data) => {
+      if (
+        data.departmentId === selectedDept ||
+        data.departmentId === myDepartmentId
+      ) {
+        setCrowdStatus(data);
+      }
+    };
+
     socket.on("ticket_called", onTicketCalled);
     socket.on("ticket_completed", onTicketCompleted);
     socket.on("ticket_cancelled", onTicketCancelled);
     socket.on("queue_status_changed", onQueueStatusChanged);
     socket.on("queue_limit_updated", onQueueLimitUpdated);
+    socket.on("queue_crowd_updated", onCrowdUpdated);
 
     return () => {
       socket.off("ticket_called", onTicketCalled);
@@ -57,8 +72,9 @@ export default function StudentDashboard() {
       socket.off("ticket_cancelled", onTicketCancelled);
       socket.off("queue_status_changed", onQueueStatusChanged);
       socket.off("queue_limit_updated", onQueueLimitUpdated);
+      socket.off("queue_crowd_updated", onCrowdUpdated);
     };
-  }, [ticketInfo]);
+  }, [ticketInfo, selectedDept, myDepartmentId]);
 
   /* =========================
      RESTORE ACTIVE TICKET
@@ -94,6 +110,25 @@ export default function StudentDashboard() {
     }
   };
 
+  /* =========================
+     FETCH CROWD STATUS (BEFORE JOIN)
+  ========================= */
+  useEffect(() => {
+    const fetchCrowd = async () => {
+      if (!selectedDept) {
+        setCrowdStatus(null);
+        return;
+      }
+      try {
+        const data = await getCrowdStatus(selectedDept);
+        setCrowdStatus(data);
+      } catch {
+        setCrowdStatus(null);
+      }
+    };
+    fetchCrowd();
+  }, [selectedDept]);
+
   const handleJoinQueue = async () => {
     try {
       const data = await joinQueue(selectedDept);
@@ -127,6 +162,7 @@ export default function StudentDashboard() {
     setMyDepartmentId(null);
     setNowServing("--");
     setSelectedDept("");
+    setCrowdStatus(null);
     setMessage(msg);
     joinedRoomRef.current = false;
   };
@@ -142,10 +178,7 @@ export default function StudentDashboard() {
 
       {/* HEADER */}
       <section className="max-w-6xl mx-auto mb-16">
-        <h1 className="text-4xl font-extrabold
-    bg-gradient-to-r
-    from-violet-400 via-fuchsia-300 to-indigo-400
-    bg-clip-text text-transparent">
+        <h1 className="text-4xl font-extrabold bg-gradient-to-r from-violet-400 via-fuchsia-300 to-indigo-400 bg-clip-text text-transparent">
           Student Dashboard
         </h1>
         <p className="text-slate-300 mt-3">
@@ -166,6 +199,41 @@ export default function StudentDashboard() {
         <div className="max-w-6xl mx-auto mb-10">
           <div className="px-6 py-4 rounded-xl bg-blue-500/15 border border-blue-500/40 text-blue-300 font-medium">
             ℹ️ Queue limit: {queueLimit} students
+          </div>
+        </div>
+      )}
+
+      {/* CROWD STATUS */}
+      {crowdStatus && (
+        <div className="max-w-6xl mx-auto mb-12">
+          <div className="p-6 rounded-2xl bg-white/10 backdrop-blur border">
+            <p className="uppercase text-sm tracking-wider text-slate-400 mb-2">
+              Crowd Status
+            </p>
+
+            <div className="flex items-center gap-3">
+              <div
+                className={`w-4 h-4 rounded-full ${
+                  crowdStatus.crowdLevel === "GREEN"
+                    ? "bg-emerald-400"
+                    : crowdStatus.crowdLevel === "YELLOW"
+                    ? "bg-yellow-400"
+                    : "bg-red-500"
+                }`}
+              />
+              <p className="text-lg font-bold">
+                {crowdStatus.crowdLevel === "GREEN" && "Low Crowd"}
+                {crowdStatus.crowdLevel === "YELLOW" && "Moderate Crowd"}
+                {crowdStatus.crowdLevel === "RED" && "High Crowd"}
+              </p>
+            </div>
+
+            <p className="mt-2 text-slate-300">
+              Estimated wait:{" "}
+              <span className="font-semibold">
+                {crowdStatus.estimatedWaitTime} mins
+              </span>
+            </p>
           </div>
         </div>
       )}
@@ -242,9 +310,7 @@ export default function StudentDashboard() {
               </div>
 
               <div>
-                <p className="text-xs text-slate-400">
-                  Estimated Wait
-                </p>
+                <p className="text-xs text-slate-400">Estimated Wait</p>
                 <p className="text-2xl font-bold">
                   {ticketInfo.estimatedWaitTime}
                 </p>

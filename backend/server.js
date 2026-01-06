@@ -14,6 +14,8 @@ import staffRoutes from "./routes/staffRoutes.js";
 import guestRoutes from "./routes/guestRoutes.js";
 import queueRoutes from "./routes/queueRoutes.js";
 
+
+
 // =======================
 // LOAD ENV VARIABLES
 // =======================
@@ -29,8 +31,10 @@ const app = express();
 // =======================
 const allowedOrigins = [
   "http://localhost:5173",
+  "https://campus-queue-management-system.onrender.com",
   "https://campus-queue-management-system-1.onrender.com",
 ];
+
 
 // =======================
 // MIDDLEWARES
