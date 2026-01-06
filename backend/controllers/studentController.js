@@ -79,6 +79,7 @@ export const joinQueue = async (req, res) => {
       user: req.user.id,
       source: "app",
       status: "waiting",
+      isGuest: false,
     });
 
     // 🔔 Notify students in this department

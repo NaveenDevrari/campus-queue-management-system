@@ -31,6 +31,7 @@ const app = express();
 // =======================
 const allowedOrigins = [
   "http://localhost:5173",
+  "http://localhost:5174",
   "https://campus-queue-management-system.onrender.com",
   "https://campus-queue-management-system-1.onrender.com",
 ];
