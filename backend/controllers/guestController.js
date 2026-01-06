@@ -3,6 +3,8 @@ import Department from "../models/Department.js";
 import Queue from "../models/Queue.js";
 import Ticket from "../models/Ticket.js";
 import { io } from "../server.js";
+import StaffQr from "../models/StaffQr.js";
+import QrSession from "../models/QrSession.js";
 
 // ===============================
 // GUEST JOIN QUEUE (QR BASED)
@@ -247,6 +249,90 @@ export const guestRestoreTicket = async (req, res) => {
 
   } catch (error) {
     console.error("Guest restore error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ===============================
+// GUEST ENTRY VIA DAILY QR
+// ===============================
+// ===============================
+// GUEST ENTRY VIA DAILY QR
+// ===============================
+export const guestEntryViaQr = async (req, res) => {
+  try {
+    const { qrId } = req.params;
+
+    console.log("📥 GUEST ENTRY HIT");
+    console.log("🔑 QR ID RECEIVED:", qrId);
+    console.log("🕒 NOW:", new Date());
+
+    const staffQr = await StaffQr.findOne({
+      qrId,
+      isActive: true,
+      validDate: { $gt: Date.now() },
+    });
+
+    console.log("📦 STAFF QR FOUND:", staffQr);
+
+    if (!staffQr) {
+      return res.status(400).json({
+        message: "QR expired or invalid",
+      });
+    }
+
+    const sessionToken = crypto.randomUUID();
+
+    await QrSession.create({
+      department: staffQr.department,
+      token: sessionToken,
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+    });
+
+    res.json({
+      redirectUrl: `${process.env.FRONTEND_BASE_URL}/#/guest/join/${sessionToken}`,
+    });
+
+  } catch (error) {
+    console.error("Guest entry error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+
+// ===============================
+// GUEST JOIN VIA SESSION TOKEN
+// ===============================
+export const guestJoinViaSession = async (req, res) => {
+  try {
+    const { sessionToken } = req.params;
+
+    // 1️⃣ Validate session
+    const session = await QrSession.findOne({
+      token: sessionToken,
+      isUsed: false,
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (!session) {
+      return res.status(400).json({
+        message: "Session expired or invalid",
+      });
+    }
+
+    // 2️⃣ Inject departmentId
+    req.body.departmentId = session.department;
+
+    // 3️⃣ Mark session as used (one-time)
+    session.isUsed = true;
+    await session.save();
+
+    // 4️⃣ Continue with existing guest join logic
+    return guestJoinQueue(req, res);
+
+  } catch (error) {
+    console.error("Guest join via session error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

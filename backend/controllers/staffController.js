@@ -4,6 +4,9 @@ import User from "../models/User.js";
 import { io } from "../server.js";
 import QRCode from "qrcode";
 import { getCrowdStatusByDepartment } from "../services/crowdStatus.service.js";
+import crypto from "crypto";
+import StaffQr from "../models/StaffQr.js";
+
 
 
 // ==============================
@@ -299,22 +302,50 @@ export const generateDepartmentQR = async (req, res) => {
     }
 
     const departmentId = staff.department.toString();
+    console.log("🧑‍💼 STAFF DEPARTMENT:", departmentId);
 
-    // ✅ IMPORTANT: HashRouter-compatible URL
-    const joinUrl = `${process.env.FRONTEND_BASE_URL}/#/guest/join?departmentId=${departmentId}`;
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+    console.log("🕒 NOW:", new Date());
+    console.log("⏰ QR VALID TILL:", endOfToday);
+
+    let staffQr = await StaffQr.findOne({
+      department: departmentId,
+      isActive: true,
+      validDate: { $gte: new Date() },
+    });
+
+    console.log("🔍 EXISTING STAFF QR:", staffQr);
+
+    if (!staffQr) {
+      staffQr = await StaffQr.create({
+        department: departmentId,
+        qrId: crypto.randomUUID(),
+        validDate: endOfToday,
+        isActive: true,
+      });
+
+      console.log("🆕 NEW STAFF QR CREATED:", staffQr);
+    }
+
+    const joinUrl = `${process.env.FRONTEND_BASE_URL}/#/guest/entry/${staffQr.qrId}`;
+    console.log("🔗 FINAL QR ID:", staffQr.qrId);
+    console.log("🌐 JOIN URL:", joinUrl);
 
     const qrCode = await QRCode.toDataURL(joinUrl);
 
     res.json({
-      departmentId,
+      qrId: staffQr.qrId,
       joinUrl,
       qrCode,
+      validTill: staffQr.validDate,
     });
   } catch (error) {
     console.error("Staff QR error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import api from "../../services/api";
 
 export default function GuestJoin() {
@@ -9,12 +9,14 @@ export default function GuestJoin() {
   console.log("🔥 GUEST JOIN FILE LOADED 🔥");
 
   /* ==========================
-     REQUIRED HOOKS (MUST EXIST)
+     ROUTER HOOKS
   ========================== */
-  const location = useLocation();
+  const { sessionToken } = useParams();
   const navigate = useNavigate();
 
-  const [departmentId, setDepartmentId] = useState("");
+  /* ==========================
+     FORM STATE
+  ========================== */
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
@@ -29,33 +31,19 @@ export default function GuestJoin() {
   }, []);
 
   /* ==========================
-     READ DEPARTMENT ID (HASH ROUTER ✅)
+     SESSION TOKEN GUARD
   ========================== */
   useEffect(() => {
-    const search =
-      location.search ||
-      (location.hash.includes("?")
-        ? location.hash.split("?")[1]
-        : "");
-
-    const params = new URLSearchParams(search);
-    const deptId = params.get("departmentId");
-
-    console.log("📌 Department ID:", deptId);
-
-    if (!deptId) {
-      setMessage("Invalid or expired QR code");
-      return;
+    if (!sessionToken) {
+      setMessage("Invalid or expired session");
     }
-
-    setDepartmentId(deptId);
-  }, [location.search, location.hash]);
+  }, [sessionToken]);
 
   /* ==========================
-     JOIN QUEUE
+     JOIN QUEUE (SESSION BASED)
   ========================== */
   const handleJoin = async () => {
-    if (!departmentId) return;
+    if (!sessionToken) return;
 
     try {
       setLoading(true);
@@ -64,18 +52,25 @@ export default function GuestJoin() {
       const guestToken = localStorage.getItem("guestToken");
 
       const res = await api.post(
-        "/guest/join",
-        { departmentId, name, phone },
+        `/guest/join/${sessionToken}`,
+        { name, phone },
         {
           headers: guestToken ? { "x-guest-token": guestToken } : {},
           withCredentials: true,
         }
       );
 
-      localStorage.setItem("guestToken", res.data.guestToken);
+      // Store guest token for restore/cancel
+      if (res.data.guestToken) {
+        localStorage.setItem("guestToken", res.data.guestToken);
+      }
+
       navigate("/guest/ticket");
     } catch (err) {
-      setMessage(err.response?.data?.message || "Failed to join queue");
+      setMessage(
+        err.response?.data?.message ||
+          "Failed to join queue. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -148,7 +143,7 @@ export default function GuestJoin() {
         {/* BUTTON */}
         <button
           onClick={handleJoin}
-          disabled={loading || !departmentId}
+          disabled={loading || !sessionToken}
           className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50"
         >
           {loading ? "Joining..." : "Join Queue"}

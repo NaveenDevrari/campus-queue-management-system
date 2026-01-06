@@ -12,6 +12,9 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 
 import GuestJoin from "./pages/guest/GuestJoin";
 import GuestTicket from "./pages/guest/GuestTicket";
+import GuestEntry from "./pages/guest/GuestEntry";
+
+
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -97,11 +100,16 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
+
         {/* =======================
             Guest Routes
         ======================== */}
         <Route path="/guest/join" element={<GuestJoin />} />
         <Route path="/guest/ticket" element={<GuestTicket />} />
+        <Route path="/guest/entry/:qrId" element={<GuestEntry />} />
+        <Route path="/guest/join/:sessionToken" element={<GuestJoin />} />
+
+
 
         {/* =======================
             Protected Routes
