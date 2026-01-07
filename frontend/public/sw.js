@@ -3,12 +3,20 @@
 ================================ */
 
 self.addEventListener("fetch", (event) => {
-  if (event.request.url.includes("/api/")) {
-    return; // 🔥 DO NOT CACHE API CALLS
+  const url = new URL(event.request.url);
+
+  // 🚫 DO NOT INTERCEPT API CALLS
+  if (url.pathname.startsWith("/api")) {
+    return;
+  }
+
+  // 🚫 DO NOT INTERCEPT PAGE NAVIGATION (THIS FIXES UI)
+  if (event.request.mode === "navigate") {
+    return;
   }
 });
 
-self.addEventListener("install", (event) => {
+self.addEventListener("install", () => {
   console.log("🟢 Service Worker installed");
   self.skipWaiting();
 });
@@ -31,7 +39,7 @@ self.addEventListener("push", (event) => {
   const title = data.title || "Queue Update";
   const options = {
     body: data.body || "Your ticket update",
-    icon: "/icon-192.png", // safe even if missing
+    icon: "/icon-192.png",
     badge: "/icon-192.png",
     vibrate: [300, 150, 300, 150, 300],
     data: data.url || "/",
@@ -49,15 +57,13 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
   event.waitUntil(
-    clients
-      .matchAll({ type: "window", includeUncontrolled: true })
-      .then((clientList) => {
-        for (const client of clientList) {
-          if (client.url === event.notification.data && "focus" in client) {
-            return client.focus();
-          }
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url === event.notification.data && "focus" in client) {
+          return client.focus();
         }
-        return clients.openWindow(event.notification.data || "/");
-      })
+      }
+      return clients.openWindow(event.notification.data || "/");
+    })
   );
 });
