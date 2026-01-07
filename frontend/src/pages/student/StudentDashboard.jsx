@@ -11,10 +11,7 @@ import { socket } from "../../services/socket";
 export default function StudentDashboard() {
   const [departments, setDepartments] = useState([]);
 
-  // 🔹 JOIN QUEUE STATE
   const [joinDept, setJoinDept] = useState("");
-
-  // 🔹 CHECK STATUS STATE
   const [statusDept, setStatusDept] = useState("");
 
   const [ticketInfo, setTicketInfo] = useState(null);
@@ -24,21 +21,47 @@ export default function StudentDashboard() {
 
   const [queueOpen, setQueueOpen] = useState(true);
   const [queueLimit, setQueueLimit] = useState(null);
-
   const [crowdStatus, setCrowdStatus] = useState(null);
 
-  // ✅ VIBRATION CONSENT STATE
-  const [vibrationEnabled, setVibrationEnabled] = useState(false);
+  // 🔔 ONE FLAG FOR VIBRATION + NOTIFICATION
+  const [alertsEnabled, setAlertsEnabled] = useState(
+    localStorage.getItem("alertsEnabled") === "true"
+  );
 
   const joinedRoomRef = useRef(false);
 
   /* =========================
-     SOCKET SETUP (TICKETS ONLY)
+     SOCKET SETUP
   ========================= */
   useEffect(() => {
     if (!socket.connected) socket.connect();
 
-    const onTicketCalled = (data) => setNowServing(data.ticketNumber);
+    const onTicketCalled = (data) => {
+      setNowServing(data.ticketNumber);
+
+      // 🎯 MY TURN DETECTED
+      if (
+        ticketInfo &&
+        data.ticketNumber === ticketInfo.ticketNumber &&
+        alertsEnabled
+      ) {
+        // 📳 VIBRATION
+        if (navigator.vibrate) {
+          navigator.vibrate([300, 150, 300, 150, 300]);
+        }
+
+        // 🔔 NOTIFICATION (SERVICE WORKER)
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.ready.then((reg) => {
+            reg.showNotification("🎟️ It's Your Turn!", {
+              body: "Please proceed to the counter now.",
+              icon: "/icon-192.png",
+              vibrate: [300, 150, 300],
+            });
+          });
+        }
+      }
+    };
 
     const onTicketCompleted = (data) => {
       if (ticketInfo && data.ticketNumber === ticketInfo.ticketNumber) {
@@ -68,7 +91,7 @@ export default function StudentDashboard() {
       socket.off("queue_status_changed", onQueueStatusChanged);
       socket.off("queue_limit_updated", onQueueLimitUpdated);
     };
-  }, [ticketInfo]);
+  }, [ticketInfo, alertsEnabled]);
 
   /* =========================
      RESTORE ACTIVE TICKET
@@ -104,7 +127,7 @@ export default function StudentDashboard() {
   }, []);
 
   /* =========================
-     FETCH CROWD STATUS (CHECK ONLY)
+     FETCH CROWD STATUS
   ========================= */
   useEffect(() => {
     const fetchCrowd = async () => {
@@ -122,9 +145,6 @@ export default function StudentDashboard() {
     fetchCrowd();
   }, [statusDept]);
 
-  /* =========================
-     JOIN QUEUE
-  ========================= */
   const handleJoinQueue = async () => {
     try {
       const data = await joinQueue(joinDept);
@@ -137,9 +157,6 @@ export default function StudentDashboard() {
     }
   };
 
-  /* =========================
-     CANCEL QUEUE
-  ========================= */
   const handleCancelQueue = async () => {
     try {
       const res = await cancelQueue(myDepartmentId);
@@ -165,18 +182,22 @@ export default function StudentDashboard() {
     joinedRoomRef.current = false;
   };
 
-  const isMyTurn =
-    ticketInfo && ticketInfo.ticketNumber === nowServing;
-
   /* =========================
-     📳 VIBRATION ON MY TURN
-     (RESPECTS BROWSER RULES)
+     ENABLE ALERTS (USER ACTION)
   ========================= */
-  useEffect(() => {
-    if (isMyTurn && vibrationEnabled && navigator.vibrate) {
-      navigator.vibrate([300, 150, 300, 150, 300]);
+  const enableAlerts = async () => {
+    const permission = await Notification.requestPermission();
+
+    if (permission !== "granted") {
+      alert("Please allow notifications to receive alerts");
+      return;
     }
-  }, [isMyTurn, vibrationEnabled]);
+
+    if (navigator.vibrate) navigator.vibrate(150);
+
+    localStorage.setItem("alertsEnabled", "true");
+    setAlertsEnabled(true);
+  };
 
   /* =========================
      UI
@@ -184,146 +205,33 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a1330] via-[#0f1f4d] to-[#141b3a] px-6 pt-10 pb-20 text-slate-100">
 
-      {/* HEADER */}
       <section className="max-w-6xl mx-auto mb-14">
         <h1 className="text-4xl font-extrabold bg-gradient-to-r from-violet-400 via-fuchsia-300 to-indigo-400 bg-clip-text text-transparent">
           Student Dashboard
         </h1>
         <p className="text-slate-300 mt-3">
-          Join queues or check crowd status without confusion.
+          Track your queue and get alerted when it’s your turn.
         </p>
 
-        {/* ✅ ENABLE VIBRATION BUTTON */}
-        {!vibrationEnabled && (
+        {!alertsEnabled && (
           <button
-            onClick={() => {
-              if (navigator.vibrate) {
-                navigator.vibrate(200);
-                setVibrationEnabled(true);
-              }
-            }}
+            onClick={enableAlerts}
             className="mt-6 px-6 py-3 rounded-xl bg-emerald-600 text-white font-semibold"
           >
-            Enable Vibration Alerts
+            🔔 Enable Turn Alerts
           </button>
         )}
       </section>
 
-      {/* ================= CHECK QUEUE STATUS ================= */}
-      <section className="max-w-6xl mx-auto mb-20">
-        <h3 className="text-lg font-semibold mb-4">
-          Check Queue Status
-        </h3>
-
-        <select
-          value={statusDept}
-          onChange={(e) => setStatusDept(e.target.value)}
-          className="w-full max-w-md px-5 py-4 rounded-xl bg-white text-slate-900"
-        >
-          <option value="">Select Department</option>
-          {departments.map((dept) => (
-            <option key={dept._id} value={dept._id}>
-              {dept.name}
-            </option>
-          ))}
-        </select>
-
-        {crowdStatus && (
-          <div className="mt-6 p-6 rounded-2xl bg-white/10 backdrop-blur border">
-            <div className="flex items-center gap-3">
-              <div
-                className={`w-4 h-4 rounded-full ${
-                  crowdStatus.crowdLevel === "GREEN"
-                    ? "bg-emerald-400"
-                    : crowdStatus.crowdLevel === "YELLOW"
-                    ? "bg-yellow-400"
-                    : "bg-red-500"
-                }`}
-              />
-              <p className="font-bold text-lg">
-                {crowdStatus.crowdLevel}
-              </p>
-            </div>
-
-            <p className="mt-2 text-slate-300">
-              Estimated wait:{" "}
-              <b>{crowdStatus.estimatedWaitTime} mins</b>
-            </p>
-          </div>
-        )}
-      </section>
-
-      {/* ================= NOW SERVING ================= */}
+      {/* NOW SERVING */}
       <section className="max-w-6xl mx-auto mb-20 text-center">
         <p className="uppercase tracking-widest text-sm text-slate-400 mb-3">
           Now Serving
         </p>
-
         <div className="text-[96px] font-extrabold text-blue-400">
           {nowServing}
         </div>
-
-        {isMyTurn && (
-          <div className="mt-5 inline-flex px-8 py-4 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 font-bold text-xl animate-pulse">
-            🔔 It’s your turn · Move to counter
-          </div>
-        )}
       </section>
-
-      {/* ================= JOIN QUEUE ================= */}
-      <section className="max-w-6xl mx-auto">
-        <h3 className="text-lg font-semibold mb-4">
-          Join Queue
-        </h3>
-
-        <select
-          value={joinDept}
-          onChange={(e) => setJoinDept(e.target.value)}
-          disabled={!!ticketInfo || !queueOpen}
-          className="w-full max-w-md px-5 py-4 rounded-xl bg-white text-slate-900"
-        >
-          <option value="">Select Department</option>
-          {departments.map((dept) => (
-            <option key={dept._id} value={dept._id}>
-              {dept.name}
-            </option>
-          ))}
-        </select>
-
-        <button
-          onClick={handleJoinQueue}
-          disabled={!joinDept || !!ticketInfo || !queueOpen}
-          className="mt-6 w-full max-w-md py-4 rounded-xl bg-blue-600 text-white font-semibold disabled:opacity-50"
-        >
-          {ticketInfo ? "Already in Queue" : "Join Queue"}
-        </button>
-
-        {ticketInfo && (
-          <div className="mt-12 bg-white/10 rounded-3xl p-8 border">
-            <h3 className="text-lg font-semibold mb-4">
-              Your Ticket
-            </h3>
-
-            <p>Ticket Number: <b>{ticketInfo.ticketNumber}</b></p>
-            <p>Position: <b>{ticketInfo.position}</b></p>
-
-            <button
-              onClick={handleCancelQueue}
-              className="mt-6 px-6 py-3 rounded-xl bg-red-600"
-            >
-              Leave Queue
-            </button>
-          </div>
-        )}
-      </section>
-
-      {message && (
-        <div className="mt-12 flex justify-center">
-          <div className="px-6 py-3 rounded-xl bg-emerald-500/15 border text-emerald-300">
-            ✅ {message}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

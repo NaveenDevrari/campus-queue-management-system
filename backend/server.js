@@ -13,6 +13,7 @@ import studentRoutes from "./routes/studentRoutes.js";
 import staffRoutes from "./routes/staffRoutes.js";
 import guestRoutes from "./routes/guestRoutes.js";
 import queueRoutes from "./routes/queueRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 
 
 
@@ -67,6 +68,7 @@ app.use("/api/student", studentRoutes);
 app.use("/api/staff", staffRoutes);
 app.use("/api/guest", guestRoutes);
 app.use("/api/queue", queueRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // =======================
 // TEST ROUTE
