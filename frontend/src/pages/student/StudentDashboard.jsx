@@ -27,6 +27,9 @@ export default function StudentDashboard() {
 
   const [crowdStatus, setCrowdStatus] = useState(null);
 
+  // ✅ VIBRATION CONSENT STATE
+  const [vibrationEnabled, setVibrationEnabled] = useState(false);
+
   const joinedRoomRef = useRef(false);
 
   /* =========================
@@ -165,15 +168,15 @@ export default function StudentDashboard() {
   const isMyTurn =
     ticketInfo && ticketInfo.ticketNumber === nowServing;
 
-    // =========================
-// VIBRATION ON MY TURN
-// =========================
-useEffect(() => {
-  if (isMyTurn && navigator.vibrate) {
-    navigator.vibrate([300, 150, 300, 150, 300]);
-  }
-}, [isMyTurn]);
-
+  /* =========================
+     📳 VIBRATION ON MY TURN
+     (RESPECTS BROWSER RULES)
+  ========================= */
+  useEffect(() => {
+    if (isMyTurn && vibrationEnabled && navigator.vibrate) {
+      navigator.vibrate([300, 150, 300, 150, 300]);
+    }
+  }, [isMyTurn, vibrationEnabled]);
 
   /* =========================
      UI
@@ -189,6 +192,21 @@ useEffect(() => {
         <p className="text-slate-300 mt-3">
           Join queues or check crowd status without confusion.
         </p>
+
+        {/* ✅ ENABLE VIBRATION BUTTON */}
+        {!vibrationEnabled && (
+          <button
+            onClick={() => {
+              if (navigator.vibrate) {
+                navigator.vibrate(200);
+                setVibrationEnabled(true);
+              }
+            }}
+            className="mt-6 px-6 py-3 rounded-xl bg-emerald-600 text-white font-semibold"
+          >
+            Enable Vibration Alerts
+          </button>
+        )}
       </section>
 
       {/* ================= CHECK QUEUE STATUS ================= */}
