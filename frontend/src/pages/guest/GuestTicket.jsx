@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../../services/api"; // ✅ USE CENTRALIZED API
+import api from "../../services/api";
 import { socket } from "../../services/socket";
 
 export default function GuestTicket() {
@@ -12,9 +12,11 @@ export default function GuestTicket() {
   const [currentServing, setCurrentServing] = useState(null);
   const [message, setMessage] = useState("");
 
-  // ✅ NEW STATES (ONLY FOR YOUR REQUIREMENT)
   const [ticketCompleted, setTicketCompleted] = useState(false);
   const [showCompletedPopup, setShowCompletedPopup] = useState(false);
+
+  // 🔔 NEW: ALERT PERMISSION STATE
+  const [alertsEnabled, setAlertsEnabled] = useState(false);
 
   const joinedRef = useRef(false);
 
@@ -26,13 +28,11 @@ export default function GuestTicket() {
       console.log("🟢 Guest socket connected:", socket.id);
     });
 
-    return () => {
-      socket.off("connect");
-    };
+    return () => socket.off("connect");
   }, []);
 
   /* ==========================
-     RESTORE TICKET (UNCHANGED)
+     RESTORE TICKET
   ========================== */
   useEffect(() => {
     const restoreTicket = async () => {
@@ -74,6 +74,7 @@ export default function GuestTicket() {
 
     socket.on("ticket_called", (data) => {
       setCurrentServing(data.ticketNumber);
+
       if (data.ticketNumber === ticket.ticketNumber) {
         setIsMyTurn(true);
       }
@@ -82,8 +83,6 @@ export default function GuestTicket() {
     socket.on("ticket_completed", () => {
       setCurrentServing(null);
       setIsMyTurn(false);
-
-      // ✅ NEW: MARK COMPLETED + SHOW POPUP
       setTicketCompleted(true);
       setShowCompletedPopup(true);
     });
@@ -95,7 +94,26 @@ export default function GuestTicket() {
   }, [ticket]);
 
   /* ==========================
-     CANCEL TICKET (UNCHANGED)
+     🔔 VIBRATION ON MY TURN
+  ========================== */
+  useEffect(() => {
+    if (isMyTurn && alertsEnabled && navigator.vibrate) {
+      navigator.vibrate([400, 200, 400, 200, 400]);
+    }
+  }, [isMyTurn, alertsEnabled]);
+
+  /* ==========================
+     ENABLE ALERTS (USER ACTION)
+  ========================== */
+  const enableAlerts = () => {
+    if (navigator.vibrate) {
+      navigator.vibrate(50); // test vibration
+    }
+    setAlertsEnabled(true);
+  };
+
+  /* ==========================
+     CANCEL TICKET
   ========================== */
   const handleCancel = async () => {
     const guestToken = localStorage.getItem("guestToken");
@@ -120,7 +138,7 @@ export default function GuestTicket() {
   };
 
   /* ==========================
-     AUTO-DISMISS MESSAGE
+     AUTO DISMISS MESSAGE
   ========================== */
   useEffect(() => {
     if (!message) return;
@@ -128,17 +146,11 @@ export default function GuestTicket() {
     return () => clearTimeout(timer);
   }, [message]);
 
-  /* ==========================
-     ESTIMATED TIME (UNCHANGED)
-  ========================== */
   const estimatedTime =
     ticket?.position && ticket.position > 0
       ? ticket.position * 5
       : null;
 
-  /* ==========================
-     UI STATES
-  ========================== */
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-slate-300 bg-[#0b1220]">
@@ -155,23 +167,14 @@ export default function GuestTicket() {
     );
   }
 
-  /* ==========================
-     UI
-  ========================== */
   return (
     <div className="relative min-h-screen flex justify-center px-4 py-12 overflow-hidden text-slate-100">
-
-      {/* BACKGROUND */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#0a1330] via-[#0f1f4d] to-[#141b3a]" />
-
-      {/* GLOWS */}
-      <div className="absolute -top-40 -left-40 w-[500px] h-[500px] bg-violet-600/25 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 -right-40 w-[400px] h-[400px] bg-indigo-600/25 rounded-full blur-3xl" />
 
       <div className="relative z-10 w-full max-w-md">
 
         {/* HEADER */}
-        <div className="text-center mb-10">
+        <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-blue-100">
             Your Queue Ticket
           </h1>
@@ -180,100 +183,67 @@ export default function GuestTicket() {
           </p>
         </div>
 
+        {/* 🔔 ENABLE ALERTS BUTTON */}
+        {!alertsEnabled && (
+          <button
+            onClick={enableAlerts}
+            className="mb-8 w-full py-3 rounded-xl bg-indigo-600 text-white font-semibold shadow-lg hover:bg-indigo-700 transition"
+          >
+            🔔 Enable Turn Alerts
+          </button>
+        )}
+
         {/* NOW SERVING */}
         <div className="text-center mb-12">
           <p className="uppercase tracking-widest text-sm text-slate-400 mb-3">
             Now Serving
           </p>
-          <div className="text-7xl font-extrabold text-blue-500 leading-none">
+          <div className="text-7xl font-extrabold text-blue-500">
             {currentServing || "--"}
           </div>
 
           {isMyTurn && (
-            <div className="mt-6 inline-flex items-center gap-3 px-6 py-3 rounded-full bg-emerald-600 text-white font-semibold text-lg shadow-lg animate-pulse">
+            <div className="mt-6 px-6 py-3 rounded-full bg-emerald-600 text-white font-semibold text-lg animate-pulse">
               🔔 It’s your turn! Please proceed
             </div>
           )}
         </div>
 
         {/* TICKET CARD */}
-        <div className="rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 p-8 shadow-[0_30px_90px_rgba(0,0,0,0.55)]">
-          <h3 className="text-lg font-semibold text-blue-100 mb-6 text-center">
-            Ticket Details
-          </h3>
+        <div className="rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 p-8">
+          <p className="text-center mb-4">
+            Ticket Number: <b>{ticket.ticketNumber}</b>
+          </p>
+          <p className="text-center">
+            Estimated wait: <b>{estimatedTime || "--"} mins</b>
+          </p>
 
-          <div className="grid grid-cols-2 gap-6 text-slate-300">
-            <div>
-              <p className="text-xs text-slate-400">Ticket Number</p>
-              <p className="text-2xl font-bold text-blue-500">
-                {ticket.ticketNumber}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-xs text-slate-400">Department</p>
-              <p className="font-semibold">{ticket.department}</p>
-            </div>
-
-            <div>
-              <p className="text-xs text-slate-400">Status</p>
-              <p className="font-semibold capitalize">{ticket.status}</p>
-            </div>
-
-            <div>
-              <p className="text-xs text-slate-400">Position</p>
-              <p className="font-semibold">{ticket.position}</p>
-            </div>
-
-            <div className="col-span-2 text-center mt-2">
-              <p className="text-xs text-slate-400">
-                Estimated Waiting Time
-              </p>
-              <p className="text-lg font-semibold text-indigo-400">
-                {estimatedTime ? `≈ ${estimatedTime} minutes` : "--"}
-              </p>
-            </div>
-          </div>
-
-          {/* ✅ HIDE CANCEL BUTTON AFTER COMPLETION */}
           {!ticketCompleted && (
             <button
               onClick={handleCancel}
               disabled={isMyTurn}
-              className="mt-10 w-full py-3 rounded-xl bg-red-500/80 text-white font-semibold hover:bg-red-600 transition disabled:opacity-50"
+              className="mt-8 w-full py-3 rounded-xl bg-red-500 text-white font-semibold disabled:opacity-50"
             >
               Cancel Ticket
             </button>
           )}
         </div>
-
-        {message && (
-          <div className="mt-6 text-center text-sm text-red-400">
-            {message}
-          </div>
-        )}
       </div>
 
-      {/* ==========================
-          COMPLETED POPUP (NEW)
-      ========================== */}
+      {/* COMPLETED POPUP */}
       {showCompletedPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#0b1220] border border-white/10 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-[#0b1220] rounded-2xl p-8 text-center">
             <h2 className="text-2xl font-bold text-emerald-400 mb-4">
               ✅ Ticket Completed
             </h2>
-            <p className="text-slate-300 mb-6">
-              Your ticket has been completed.  
-              You may join another queue.
-            </p>
             <button
               onClick={() => {
                 localStorage.removeItem("guestToken");
                 socket.disconnect();
                 navigate("/guest/join");
               }}
-              className="w-full py-3 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition"
+              className="w-full py-3 rounded-xl bg-emerald-600 text-white font-semibold"
             >
               Join Another Queue
             </button>
