@@ -2,6 +2,12 @@
    SERVICE WORKER – CAMPUS QUEUE
 ================================ */
 
+self.addEventListener("fetch", (event) => {
+  if (event.request.url.includes("/api/")) {
+    return; // 🔥 DO NOT CACHE API CALLS
+  }
+});
+
 self.addEventListener("install", (event) => {
   console.log("🟢 Service Worker installed");
   self.skipWaiting();
