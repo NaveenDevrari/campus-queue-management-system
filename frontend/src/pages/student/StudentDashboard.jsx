@@ -165,6 +165,16 @@ export default function StudentDashboard() {
   const isMyTurn =
     ticketInfo && ticketInfo.ticketNumber === nowServing;
 
+    // =========================
+// VIBRATION ON MY TURN
+// =========================
+useEffect(() => {
+  if (isMyTurn && navigator.vibrate) {
+    navigator.vibrate([300, 150, 300, 150, 300]);
+  }
+}, [isMyTurn]);
+
+
   /* =========================
      UI
   ========================= */
