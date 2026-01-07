@@ -2,14 +2,14 @@
    SERVICE WORKER – CAMPUS QUEUE
 ================================ */
 
-self.addEventListener("install", () => {
+self.addEventListener("install", (event) => {
   console.log("🟢 Service Worker installed");
   self.skipWaiting();
 });
 
-self.addEventListener("activate", () => {
+self.addEventListener("activate", (event) => {
   console.log("🔵 Service Worker activated");
-  self.clients.claim();
+  event.waitUntil(self.clients.claim());
 });
 
 /* ================================
@@ -25,7 +25,7 @@ self.addEventListener("push", (event) => {
   const title = data.title || "Queue Update";
   const options = {
     body: data.body || "Your ticket update",
-    icon: "/icon-192.png", // optional (safe even if missing)
+    icon: "/icon-192.png", // safe even if missing
     badge: "/icon-192.png",
     vibrate: [300, 150, 300, 150, 300],
     data: data.url || "/",
@@ -43,10 +43,15 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
   event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if (client.url === event.notification.data && "focus" in client) {
-          return client.focus();
+    clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if (client.url === event.notification.data && "focus" in client) {
+            return client.focus();
+          }
         }
-      }
-      i
+        return clients.openWindow(event.notification.data || "/");
+      })
+  );
+});
