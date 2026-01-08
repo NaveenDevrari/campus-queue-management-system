@@ -23,19 +23,16 @@ export default function StudentDashboard() {
   const [queueLimit, setQueueLimit] = useState(null);
   const [crowdStatus, setCrowdStatus] = useState(null);
 
-  // 🔔 ONE FLAG FOR BOTH VIBRATION + NOTIFICATION
+  // 🔔 SINGLE SOURCE OF TRUTH
   const [alertsEnabled, setAlertsEnabled] = useState(false);
 
   const joinedRoomRef = useRef(false);
 
   /* =========================
-     🔄 SYNC WITH BROWSER PERMISSION
-     (SINGLE SOURCE OF TRUTH)
+     🔄 SYNC PERMISSION ON LOAD
   ========================= */
   useEffect(() => {
-    if (!("Notification" in window)) return;
-
-    if (Notification.permission === "granted") {
+    if ("Notification" in window && Notification.permission === "granted") {
       setAlertsEnabled(true);
     } else {
       setAlertsEnabled(false);
@@ -51,18 +48,15 @@ export default function StudentDashboard() {
     const onTicketCalled = (data) => {
       setNowServing(data.ticketNumber);
 
-      // 🎯 MY TURN → ALERTS
       if (
         alertsEnabled &&
         ticketInfo &&
         data.ticketNumber === ticketInfo.ticketNumber
       ) {
-        // 📳 VIBRATION
         if (navigator.vibrate) {
           navigator.vibrate([300, 150, 300, 150, 300]);
         }
 
-        // 🔔 PUSH NOTIFICATION
         if ("serviceWorker" in navigator) {
           navigator.serviceWorker.ready.then((reg) => {
             reg.showNotification("🎟️ It's Your Turn!", {
@@ -81,14 +75,10 @@ export default function StudentDashboard() {
       }
     };
 
-    const onTicketCancelled = () =>
-      resetState("You have left the queue.");
+    const onTicketCancelled = () => resetState("You have left the queue.");
 
-    const onQueueStatusChanged = (data) =>
-      setQueueOpen(data.isOpen);
-
-    const onQueueLimitUpdated = (data) =>
-      setQueueLimit(data.maxTickets);
+    const onQueueStatusChanged = (data) => setQueueOpen(data.isOpen);
+    const onQueueLimitUpdated = (data) => setQueueLimit(data.maxTickets);
 
     socket.on("ticket_called", onTicketCalled);
     socket.on("ticket_completed", onTicketCompleted);
@@ -198,7 +188,7 @@ export default function StudentDashboard() {
   };
 
   /* =========================
-     ENABLE ALERTS (USER CLICK)
+     ENABLE ALERTS (FINAL FIX)
   ========================= */
   const enableAlerts = async () => {
     if (!("Notification" in window)) {
@@ -209,8 +199,10 @@ export default function StudentDashboard() {
     const permission = await Notification.requestPermission();
 
     if (permission === "granted") {
-      setAlertsEnabled(true); // ✅ BUTTON HIDES HERE
       if (navigator.vibrate) navigator.vibrate(150);
+
+      // 🔴 REQUIRED FOR MOBILE BROWSERS
+      window.location.reload();
     } else {
       alert("Please allow notifications to receive alerts");
     }
@@ -259,7 +251,7 @@ export default function StudentDashboard() {
         </select>
 
         {crowdStatus && (
-          <div className="mt-6 p-6 rounded-2xl bg-white/10 backdrop-blur border">
+          <div className="mt-6 p-6 rounded-2xl bg-white/10 border">
             <p className="font-bold">{crowdStatus.crowdLevel}</p>
             <p className="text-slate-300">
               Estimated wait: <b>{crowdStatus.estimatedWaitTime} mins</b>
