@@ -31,17 +31,20 @@ export default function StudentDashboard() {
   const joinedRoomRef = useRef(false);
 
   /* =========================
-     🔄 SYNC WITH BROWSER PERMISSION (FIX)
+     🔄 SYNC WITH BROWSER PERMISSION
+     (SINGLE SOURCE OF TRUTH)
   ========================= */
   useEffect(() => {
-    if ("Notification" in window) {
-      if (Notification.permission === "granted") {
-        localStorage.setItem("alertsEnabled", "true");
-        setAlertsEnabled(true);
-      }
+    if (!("Notification" in window)) return;
+
+    if (Notification.permission === "granted") {
+      localStorage.setItem("alertsEnabled", "true");
+      setAlertsEnabled(true);
+    } else {
+      localStorage.removeItem("alertsEnabled");
+      setAlertsEnabled(false);
     }
   }, []);
-
 
   /* =========================
      SOCKET SETUP
@@ -52,7 +55,7 @@ export default function StudentDashboard() {
     const onTicketCalled = (data) => {
       setNowServing(data.ticketNumber);
 
-      // 🎯 MY TURN
+      // 🎯 MY TURN → ALERTS
       if (
         alertsEnabled &&
         ticketInfo &&
@@ -75,9 +78,6 @@ export default function StudentDashboard() {
         }
       }
     };
-
-    
-
 
     const onTicketCompleted = (data) => {
       if (ticketInfo && data.ticketNumber === ticketInfo.ticketNumber) {
@@ -205,16 +205,21 @@ export default function StudentDashboard() {
      ENABLE ALERTS (USER CLICK)
   ========================= */
   const enableAlerts = async () => {
+    if (!("Notification" in window)) {
+      alert("Notifications are not supported on this device");
+      return;
+    }
+
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {
       alert("Please allow notifications to receive alerts");
       return;
     }
 
-    if (navigator.vibrate) navigator.vibrate(150);
-
     localStorage.setItem("alertsEnabled", "true");
     setAlertsEnabled(true);
+
+    if (navigator.vibrate) navigator.vibrate(150);
   };
 
   /* =========================
