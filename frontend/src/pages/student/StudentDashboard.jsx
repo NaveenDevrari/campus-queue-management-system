@@ -23,23 +23,12 @@ export default function StudentDashboard() {
   const [queueLimit, setQueueLimit] = useState(null);
   const [crowdStatus, setCrowdStatus] = useState(null);
 
-  // 🔔 FINAL SINGLE SOURCE OF TRUTH
-  const [alertsEnabled, setAlertsEnabled] = useState(false);
+  /* 🔔 SINGLE SOURCE OF TRUTH (UI ONLY) */
+  const [alertsEnabled, setAlertsEnabled] = useState(
+    localStorage.getItem("alertsEnabled") === "true"
+  );
 
   const joinedRoomRef = useRef(false);
-
-  /* =========================
-     🔄 SYNC ALERT STATE ON LOAD
-     (FINAL & MOBILE SAFE)
-  ========================= */
-  useEffect(() => {
-    const enabled =
-      "Notification" in window &&
-      Notification.permission === "granted" &&
-      localStorage.getItem("alertsEnabled") === "true";
-
-    setAlertsEnabled(enabled);
-  }, []);
 
   /* =========================
      SOCKET SETUP
@@ -55,10 +44,12 @@ export default function StudentDashboard() {
         ticketInfo &&
         data.ticketNumber === ticketInfo.ticketNumber
       ) {
+        // 📳 VIBRATION
         if (navigator.vibrate) {
           navigator.vibrate([300, 150, 300, 150, 300]);
         }
 
+        // 🔔 NOTIFICATION
         if ("serviceWorker" in navigator) {
           navigator.serviceWorker.ready.then((reg) => {
             reg.showNotification("🎟️ It's Your Turn!", {
@@ -77,17 +68,14 @@ export default function StudentDashboard() {
       }
     };
 
-    const onTicketCancelled = () => {
+    const onTicketCancelled = () =>
       resetState("You have left the queue.");
-    };
 
-    const onQueueStatusChanged = (data) => {
+    const onQueueStatusChanged = (data) =>
       setQueueOpen(data.isOpen);
-    };
 
-    const onQueueLimitUpdated = (data) => {
+    const onQueueLimitUpdated = (data) =>
       setQueueLimit(data.maxTickets);
-    };
 
     socket.on("ticket_called", onTicketCalled);
     socket.on("ticket_completed", onTicketCompleted);
@@ -166,8 +154,8 @@ export default function StudentDashboard() {
       setMyDepartmentId(joinDept);
       setMessage(data.message);
       joinRoomOnce(joinDept);
-    } catch (err) {
-      setMessage(err.response?.data?.message || "Failed to join queue");
+    } catch {
+      setMessage("Failed to join queue");
     }
   };
 
@@ -175,8 +163,8 @@ export default function StudentDashboard() {
     try {
       const res = await cancelQueue(myDepartmentId);
       resetState(res.message);
-    } catch (err) {
-      setMessage(err.response?.data?.message || "Failed to leave queue");
+    } catch {
+      setMessage("Failed to leave queue");
     }
   };
 
@@ -197,7 +185,7 @@ export default function StudentDashboard() {
   };
 
   /* =========================
-     ENABLE ALERTS (FINAL FIX)
+     🔔 ENABLE ALERTS (FINAL)
   ========================= */
   const enableAlerts = async () => {
     if (!("Notification" in window)) {
@@ -207,14 +195,16 @@ export default function StudentDashboard() {
 
     const permission = await Notification.requestPermission();
 
-    if (permission === "granted") {
-      localStorage.setItem("alertsEnabled", "true");
-      setAlertsEnabled(true);
-
-      if (navigator.vibrate) navigator.vibrate(150);
-    } else {
+    if (permission !== "granted") {
       alert("Please allow notifications to receive alerts");
+      return;
     }
+
+    // ✅ THIS IS THE FIX
+    localStorage.setItem("alertsEnabled", "true");
+    setAlertsEnabled(true);
+
+    if (navigator.vibrate) navigator.vibrate(150);
   };
 
   /* =========================
