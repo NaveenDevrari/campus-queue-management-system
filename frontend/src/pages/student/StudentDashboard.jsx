@@ -23,7 +23,7 @@ export default function StudentDashboard() {
   const [queueLimit, setQueueLimit] = useState(null);
   const [crowdStatus, setCrowdStatus] = useState(null);
 
-  // 🔔 ONE FLAG FOR VIBRATION + NOTIFICATION
+  // 🔔 ONE FLAG FOR BOTH VIBRATION + NOTIFICATION
   const [alertsEnabled, setAlertsEnabled] = useState(
     localStorage.getItem("alertsEnabled") === "true"
   );
@@ -39,18 +39,18 @@ export default function StudentDashboard() {
     const onTicketCalled = (data) => {
       setNowServing(data.ticketNumber);
 
-      // 🎯 MY TURN DETECTED
+      // 🎯 MY TURN
       if (
+        alertsEnabled &&
         ticketInfo &&
-        data.ticketNumber === ticketInfo.ticketNumber &&
-        alertsEnabled
+        data.ticketNumber === ticketInfo.ticketNumber
       ) {
         // 📳 VIBRATION
         if (navigator.vibrate) {
           navigator.vibrate([300, 150, 300, 150, 300]);
         }
 
-        // 🔔 NOTIFICATION (SERVICE WORKER)
+        // 🔔 PUSH NOTIFICATION
         if ("serviceWorker" in navigator) {
           navigator.serviceWorker.ready.then((reg) => {
             reg.showNotification("🎟️ It's Your Turn!", {
@@ -145,6 +145,9 @@ export default function StudentDashboard() {
     fetchCrowd();
   }, [statusDept]);
 
+  /* =========================
+     ACTIONS
+  ========================= */
   const handleJoinQueue = async () => {
     try {
       const data = await joinQueue(joinDept);
@@ -183,11 +186,10 @@ export default function StudentDashboard() {
   };
 
   /* =========================
-     ENABLE ALERTS (USER ACTION)
+     ENABLE ALERTS (USER CLICK)
   ========================= */
   const enableAlerts = async () => {
     const permission = await Notification.requestPermission();
-
     if (permission !== "granted") {
       alert("Please allow notifications to receive alerts");
       return;
@@ -205,6 +207,7 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a1330] via-[#0f1f4d] to-[#141b3a] px-6 pt-10 pb-20 text-slate-100">
 
+      {/* HEADER */}
       <section className="max-w-6xl mx-auto mb-14">
         <h1 className="text-4xl font-extrabold bg-gradient-to-r from-violet-400 via-fuchsia-300 to-indigo-400 bg-clip-text text-transparent">
           Student Dashboard
@@ -223,6 +226,33 @@ export default function StudentDashboard() {
         )}
       </section>
 
+      {/* CHECK QUEUE STATUS */}
+      <section className="max-w-6xl mx-auto mb-20">
+        <h3 className="text-lg font-semibold mb-4">Check Queue Status</h3>
+
+        <select
+          value={statusDept}
+          onChange={(e) => setStatusDept(e.target.value)}
+          className="w-full max-w-md px-5 py-4 rounded-xl bg-white text-slate-900"
+        >
+          <option value="">Select Department</option>
+          {departments.map((dept) => (
+            <option key={dept._id} value={dept._id}>
+              {dept.name}
+            </option>
+          ))}
+        </select>
+
+        {crowdStatus && (
+          <div className="mt-6 p-6 rounded-2xl bg-white/10 backdrop-blur border">
+            <p className="font-bold">{crowdStatus.crowdLevel}</p>
+            <p className="text-slate-300">
+              Estimated wait: <b>{crowdStatus.estimatedWaitTime} mins</b>
+            </p>
+          </div>
+        )}
+      </section>
+
       {/* NOW SERVING */}
       <section className="max-w-6xl mx-auto mb-20 text-center">
         <p className="uppercase tracking-widest text-sm text-slate-400 mb-3">
@@ -232,6 +262,56 @@ export default function StudentDashboard() {
           {nowServing}
         </div>
       </section>
+
+      {/* JOIN QUEUE */}
+      <section className="max-w-6xl mx-auto">
+        <h3 className="text-lg font-semibold mb-4">Join Queue</h3>
+
+        <select
+          value={joinDept}
+          onChange={(e) => setJoinDept(e.target.value)}
+          disabled={!!ticketInfo || !queueOpen}
+          className="w-full max-w-md px-5 py-4 rounded-xl bg-white text-slate-900"
+        >
+          <option value="">Select Department</option>
+          {departments.map((dept) => (
+            <option key={dept._id} value={dept._id}>
+              {dept.name}
+            </option>
+          ))}
+        </select>
+
+        <button
+          onClick={handleJoinQueue}
+          disabled={!joinDept || !!ticketInfo || !queueOpen}
+          className="mt-6 w-full max-w-md py-4 rounded-xl bg-blue-600 text-white font-semibold disabled:opacity-50"
+        >
+          {ticketInfo ? "Already in Queue" : "Join Queue"}
+        </button>
+
+        {ticketInfo && (
+          <div className="mt-12 bg-white/10 rounded-3xl p-8 border">
+            <h3 className="text-lg font-semibold mb-4">Your Ticket</h3>
+            <p>Ticket Number: <b>{ticketInfo.ticketNumber}</b></p>
+            <p>Position: <b>{ticketInfo.position}</b></p>
+
+            <button
+              onClick={handleCancelQueue}
+              className="mt-6 px-6 py-3 rounded-xl bg-red-600"
+            >
+              Leave Queue
+            </button>
+          </div>
+        )}
+      </section>
+
+      {message && (
+        <div className="mt-12 flex justify-center">
+          <div className="px-6 py-3 rounded-xl bg-emerald-500/15 border text-emerald-300">
+            ✅ {message}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
