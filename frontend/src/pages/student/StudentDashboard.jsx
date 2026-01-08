@@ -207,23 +207,23 @@ export default function StudentDashboard() {
      🔔 ENABLE ALERTS
   ========================= */
   const enableAlerts = async () => {
-    if (!("Notification" in window)) {
-      alert("Notifications are not supported on this device");
-      return;
-    }
+  if (!("Notification" in window)) {
+    alert("Notifications are not supported on this device");
+    return;
+  }
 
-    const permission = await Notification.requestPermission();
+  const permission = await Notification.requestPermission();
 
-    if (permission !== "granted") {
-      alert("Please allow notifications to receive alerts");
-      return;
-    }
-
+  if (permission === "granted") {
     localStorage.setItem("alertsEnabled", "true");
-    setAlertsEnabled(true);
 
-    if (navigator.vibrate) navigator.vibrate(150);
-  };
+    // 🔥 REQUIRED FOR MOBILE
+    window.location.reload();
+  } else {
+    alert("Please allow notifications to receive alerts");
+  }
+};
+
 
   /* =========================
      UI
