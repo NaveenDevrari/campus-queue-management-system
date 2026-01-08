@@ -23,13 +23,13 @@ export default function StudentDashboard() {
   const [queueLimit, setQueueLimit] = useState(null);
   const [crowdStatus, setCrowdStatus] = useState(null);
 
-  // 🔔 SINGLE SOURCE OF TRUTH
+  // 🔔 SINGLE SOURCE OF TRUTH (UI STATE)
   const [alertsEnabled, setAlertsEnabled] = useState(false);
 
   const joinedRoomRef = useRef(false);
 
   /* =====================================================
-     ✅ MOBILE-SAFE PERMISSION SYNC (FINAL FIX)
+     ✅ MOBILE-SAFE PERMISSION SYNC (FINAL)
   ===================================================== */
   useEffect(() => {
     const syncAlerts = () => {
@@ -63,10 +63,12 @@ export default function StudentDashboard() {
         ticketInfo &&
         data.ticketNumber === ticketInfo.ticketNumber
       ) {
+        // 📳 VIBRATION
         if (navigator.vibrate) {
           navigator.vibrate([300, 150, 300, 150, 300]);
         }
 
+        // 🔔 NOTIFICATION
         if ("serviceWorker" in navigator) {
           navigator.serviceWorker.ready.then((reg) => {
             reg.showNotification("🎟️ It's Your Turn!", {
