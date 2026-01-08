@@ -24,9 +24,7 @@ export default function StudentDashboard() {
   const [crowdStatus, setCrowdStatus] = useState(null);
 
   // 🔔 ONE FLAG FOR BOTH VIBRATION + NOTIFICATION
-  const [alertsEnabled, setAlertsEnabled] = useState(
-    localStorage.getItem("alertsEnabled") === "true"
-  );
+  const [alertsEnabled, setAlertsEnabled] = useState(false);
 
   const joinedRoomRef = useRef(false);
 
@@ -38,10 +36,8 @@ export default function StudentDashboard() {
     if (!("Notification" in window)) return;
 
     if (Notification.permission === "granted") {
-      localStorage.setItem("alertsEnabled", "true");
       setAlertsEnabled(true);
     } else {
-      localStorage.removeItem("alertsEnabled");
       setAlertsEnabled(false);
     }
   }, []);
@@ -211,15 +207,13 @@ export default function StudentDashboard() {
     }
 
     const permission = await Notification.requestPermission();
-    if (permission !== "granted") {
+
+    if (permission === "granted") {
+      setAlertsEnabled(true); // ✅ BUTTON HIDES HERE
+      if (navigator.vibrate) navigator.vibrate(150);
+    } else {
       alert("Please allow notifications to receive alerts");
-      return;
     }
-
-    localStorage.setItem("alertsEnabled", "true");
-    setAlertsEnabled(true);
-
-    if (navigator.vibrate) navigator.vibrate(150);
   };
 
   /* =========================
