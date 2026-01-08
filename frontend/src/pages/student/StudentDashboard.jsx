@@ -23,20 +23,22 @@ export default function StudentDashboard() {
   const [queueLimit, setQueueLimit] = useState(null);
   const [crowdStatus, setCrowdStatus] = useState(null);
 
-  // 🔔 SINGLE SOURCE OF TRUTH
+  // 🔔 FINAL SINGLE SOURCE OF TRUTH
   const [alertsEnabled, setAlertsEnabled] = useState(false);
 
   const joinedRoomRef = useRef(false);
 
   /* =========================
-     🔄 SYNC PERMISSION ON LOAD
+     🔄 SYNC ALERT STATE ON LOAD
+     (FINAL & MOBILE SAFE)
   ========================= */
   useEffect(() => {
-    if ("Notification" in window && Notification.permission === "granted") {
-      setAlertsEnabled(true);
-    } else {
-      setAlertsEnabled(false);
-    }
+    const enabled =
+      "Notification" in window &&
+      Notification.permission === "granted" &&
+      localStorage.getItem("alertsEnabled") === "true";
+
+    setAlertsEnabled(enabled);
   }, []);
 
   /* =========================
@@ -75,10 +77,17 @@ export default function StudentDashboard() {
       }
     };
 
-    const onTicketCancelled = () => resetState("You have left the queue.");
+    const onTicketCancelled = () => {
+      resetState("You have left the queue.");
+    };
 
-    const onQueueStatusChanged = (data) => setQueueOpen(data.isOpen);
-    const onQueueLimitUpdated = (data) => setQueueLimit(data.maxTickets);
+    const onQueueStatusChanged = (data) => {
+      setQueueOpen(data.isOpen);
+    };
+
+    const onQueueLimitUpdated = (data) => {
+      setQueueLimit(data.maxTickets);
+    };
 
     socket.on("ticket_called", onTicketCalled);
     socket.on("ticket_completed", onTicketCompleted);
@@ -199,10 +208,10 @@ export default function StudentDashboard() {
     const permission = await Notification.requestPermission();
 
     if (permission === "granted") {
-      if (navigator.vibrate) navigator.vibrate(150);
+      localStorage.setItem("alertsEnabled", "true");
+      setAlertsEnabled(true);
 
-      // 🔴 REQUIRED FOR MOBILE BROWSERS
-      window.location.reload();
+      if (navigator.vibrate) navigator.vibrate(150);
     } else {
       alert("Please allow notifications to receive alerts");
     }
