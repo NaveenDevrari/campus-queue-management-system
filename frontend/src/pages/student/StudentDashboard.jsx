@@ -31,6 +31,19 @@ export default function StudentDashboard() {
   const joinedRoomRef = useRef(false);
 
   /* =========================
+     🔄 SYNC WITH BROWSER PERMISSION (FIX)
+  ========================= */
+  useEffect(() => {
+    if ("Notification" in window) {
+      if (Notification.permission === "granted") {
+        localStorage.setItem("alertsEnabled", "true");
+        setAlertsEnabled(true);
+      }
+    }
+  }, []);
+
+
+  /* =========================
      SOCKET SETUP
   ========================= */
   useEffect(() => {
@@ -62,6 +75,9 @@ export default function StudentDashboard() {
         }
       }
     };
+
+    
+
 
     const onTicketCompleted = (data) => {
       if (ticketInfo && data.ticketNumber === ticketInfo.ticketNumber) {
