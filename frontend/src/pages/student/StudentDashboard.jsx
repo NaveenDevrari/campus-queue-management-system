@@ -23,12 +23,31 @@ export default function StudentDashboard() {
   const [queueLimit, setQueueLimit] = useState(null);
   const [crowdStatus, setCrowdStatus] = useState(null);
 
-  /* 🔔 SINGLE SOURCE OF TRUTH (UI ONLY) */
-  const [alertsEnabled, setAlertsEnabled] = useState(
-    localStorage.getItem("alertsEnabled") === "true"
-  );
+  // 🔔 SINGLE SOURCE OF TRUTH
+  const [alertsEnabled, setAlertsEnabled] = useState(false);
 
   const joinedRoomRef = useRef(false);
+
+  /* =====================================================
+     ✅ MOBILE-SAFE PERMISSION SYNC (FINAL FIX)
+  ===================================================== */
+  useEffect(() => {
+    const syncAlerts = () => {
+      const enabled =
+        "Notification" in window &&
+        Notification.permission === "granted" &&
+        localStorage.getItem("alertsEnabled") === "true";
+
+      setAlertsEnabled(enabled);
+    };
+
+    syncAlerts(); // initial load
+    document.addEventListener("visibilitychange", syncAlerts);
+
+    return () => {
+      document.removeEventListener("visibilitychange", syncAlerts);
+    };
+  }, []);
 
   /* =========================
      SOCKET SETUP
@@ -44,12 +63,10 @@ export default function StudentDashboard() {
         ticketInfo &&
         data.ticketNumber === ticketInfo.ticketNumber
       ) {
-        // 📳 VIBRATION
         if (navigator.vibrate) {
           navigator.vibrate([300, 150, 300, 150, 300]);
         }
 
-        // 🔔 NOTIFICATION
         if ("serviceWorker" in navigator) {
           navigator.serviceWorker.ready.then((reg) => {
             reg.showNotification("🎟️ It's Your Turn!", {
@@ -185,7 +202,7 @@ export default function StudentDashboard() {
   };
 
   /* =========================
-     🔔 ENABLE ALERTS (FINAL)
+     🔔 ENABLE ALERTS
   ========================= */
   const enableAlerts = async () => {
     if (!("Notification" in window)) {
@@ -200,7 +217,6 @@ export default function StudentDashboard() {
       return;
     }
 
-    // ✅ THIS IS THE FIX
     localStorage.setItem("alertsEnabled", "true");
     setAlertsEnabled(true);
 
