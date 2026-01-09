@@ -23,31 +23,12 @@ export default function StudentDashboard() {
   const [queueLimit, setQueueLimit] = useState(null);
   const [crowdStatus, setCrowdStatus] = useState(null);
 
-  // 🔔 SINGLE SOURCE OF TRUTH (UI STATE)
-  const [alertsEnabled, setAlertsEnabled] = useState(false);
+  /* 🔔 FINAL SINGLE SOURCE OF TRUTH (UI ONLY) */
+  const [alertsEnabled, setAlertsEnabled] = useState(() => {
+    return localStorage.getItem("alertsEnabled") === "true";
+  });
 
   const joinedRoomRef = useRef(false);
-
-  /* =====================================================
-     ✅ MOBILE-SAFE PERMISSION SYNC (FINAL)
-  ===================================================== */
-  useEffect(() => {
-    const syncAlerts = () => {
-      const enabled =
-        "Notification" in window &&
-        Notification.permission === "granted" &&
-        localStorage.getItem("alertsEnabled") === "true";
-
-      setAlertsEnabled(enabled);
-    };
-
-    syncAlerts(); // initial load
-    document.addEventListener("visibilitychange", syncAlerts);
-
-    return () => {
-      document.removeEventListener("visibilitychange", syncAlerts);
-    };
-  }, []);
 
   /* =========================
      SOCKET SETUP
@@ -204,26 +185,24 @@ export default function StudentDashboard() {
   };
 
   /* =========================
-     🔔 ENABLE ALERTS
+     🔔 ENABLE ALERTS (FINAL)
   ========================= */
   const enableAlerts = async () => {
-  if (!("Notification" in window)) {
-    alert("Notifications are not supported on this device");
-    return;
-  }
+    if (!("Notification" in window)) {
+      alert("Notifications are not supported on this device");
+      return;
+    }
 
-  const permission = await Notification.requestPermission();
+    try {
+      await Notification.requestPermission();
+    } catch {}
 
-  if (permission === "granted") {
+    // ✅ UI DECISION — NOT BROWSER
     localStorage.setItem("alertsEnabled", "true");
+    setAlertsEnabled(true);
 
-    // 🔥 REQUIRED FOR MOBILE
-    window.location.reload();
-  } else {
-    alert("Please allow notifications to receive alerts");
-  }
-};
-
+    if (navigator.vibrate) navigator.vibrate(150);
+  };
 
   /* =========================
      UI
