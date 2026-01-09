@@ -26,3 +26,26 @@ export const getCrowdStatus = async (departmentId) => {
   );
   return res.data;
 };
+
+const API_BASE = import.meta.env.VITE_API_URL;
+
+export const getMyTicketHistory = async () => {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(
+    `${API_BASE}/student/ticket-history`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch ticket history");
+  }
+
+  return res.json();
+};
+
+

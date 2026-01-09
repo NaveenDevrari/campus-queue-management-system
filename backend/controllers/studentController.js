@@ -228,3 +228,39 @@ export const cancelQueue = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// ==============================
+// STUDENT: TICKET HISTORY
+// ==============================
+export const getMyTicketHistory = async (req, res) => {
+  try {
+    if (req.user.role !== "student") {
+      return res.status(403).json({ message: "Students only" });
+    }
+
+    const tickets = await Ticket.find({
+      user: req.user.id,
+      status: { $in: ["completed", "no-show"] },
+    })
+      .populate({
+        path: "queue",
+        populate: {
+          path: "department",
+          select: "name",
+        },
+      })
+      .sort({ createdAt: -1 });
+
+    res.json(
+      tickets.map((t) => ({
+        ticketNumber: t.ticketNumber,
+        department: t.queue.department.name,
+        status: t.status,
+        joinedAt: t.createdAt,
+        servedAt: t.servedAt,
+      }))
+    );
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

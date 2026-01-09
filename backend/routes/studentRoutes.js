@@ -5,6 +5,7 @@ import {
   getActiveDepartments,
   getMyActiveTicket,
   cancelQueue,
+  getMyTicketHistory,
 } from "../controllers/studentController.js";
 
 const router = express.Router();
@@ -22,6 +23,11 @@ router.post("/join-queue", protect, joinQueue);
 // STUDENT: VIEW ACTIVE TICKET
 // ==============================
 router.get("/my-ticket", protect, getMyActiveTicket);
+// ==============================
+// STUDENT: TICKET HISTORY
+// ==============================
+router.get("/ticket-history", protect, getMyTicketHistory);
+
 
 // ==============================
 // STUDENT: CANCEL QUEUE

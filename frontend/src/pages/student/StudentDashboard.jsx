@@ -5,10 +5,10 @@ import {
   getMyActiveTicket,
   cancelQueue,
   getCrowdStatus,
+  getMyTicketHistory,
 } from "../../services/student";
 import { socket } from "../../services/socket";
 import { subscribeToPush } from "../../services/push";
-
 
 export default function StudentDashboard() {
   const [departments, setDepartments] = useState([]);
@@ -24,6 +24,9 @@ export default function StudentDashboard() {
   const [queueOpen, setQueueOpen] = useState(true);
   const [queueLimit, setQueueLimit] = useState(null);
   const [crowdStatus, setCrowdStatus] = useState(null);
+
+  // 🆕 HISTORY
+  const [ticketHistory, setTicketHistory] = useState([]);
 
   /* 🔔 FINAL SINGLE SOURCE OF TRUTH (UI ONLY) */
   const [alertsEnabled, setAlertsEnabled] = useState(() => {
@@ -46,13 +49,9 @@ export default function StudentDashboard() {
         ticketInfo &&
         data.ticketNumber === ticketInfo.ticketNumber
       ) {
-        // 📳 VIBRATION
         if (navigator.vibrate) {
           navigator.vibrate([300, 150, 300, 150, 300]);
         }
-
-
-        
       }
     };
 
@@ -105,6 +104,35 @@ export default function StudentDashboard() {
   }, []);
 
   /* =========================
+     MOBILE RESUME FIX
+  ========================= */
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === "visible") {
+        if (!socket.connected) socket.connect();
+
+        try {
+          const ticket = await getMyActiveTicket();
+          if (ticket) {
+            setTicketInfo(ticket);
+            setMyDepartmentId(ticket.departmentId);
+            setJoinDept(ticket.departmentId);
+
+            socket.emit("join_department", ticket.departmentId);
+            joinedRoomRef.current = true;
+          }
+        } catch (err) {
+          console.error("Resume sync failed", err);
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
+
+  /* =========================
      FETCH DEPARTMENTS
   ========================= */
   useEffect(() => {
@@ -139,6 +167,21 @@ export default function StudentDashboard() {
   }, [statusDept]);
 
   /* =========================
+     FETCH TICKET HISTORY
+  ========================= */
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const data = await getMyTicketHistory();
+        setTicketHistory(data);
+      } catch (err) {
+        console.error("History fetch failed", err);
+      }
+    };
+    fetchHistory();
+  }, []);
+
+  /* =========================
      ACTIONS
   ========================= */
   const handleJoinQueue = async () => {
@@ -163,10 +206,9 @@ export default function StudentDashboard() {
   };
 
   const joinRoomOnce = (departmentId) => {
-    if (!joinedRoomRef.current) {
-      socket.emit("join_department", departmentId);
-      joinedRoomRef.current = true;
-    }
+    if (!departmentId) return;
+    socket.emit("join_department", departmentId);
+    joinedRoomRef.current = true;
   };
 
   const resetState = (msg) => {
@@ -179,34 +221,29 @@ export default function StudentDashboard() {
   };
 
   /* =========================
-     🔔 ENABLE ALERTS (FINAL)
+     ENABLE ALERTS
   ========================= */
   const enableAlerts = async () => {
-  try {
-    const subscription = await subscribeToPush();
+    try {
+      const subscription = await subscribeToPush();
+      const token = localStorage.getItem("token");
 
-    // send subscription to backend
-    const token = localStorage.getItem("token");
+      await fetch("/api/notifications/subscribe", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(subscription),
+      });
 
-await fetch("/api/notifications/subscribe", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  },
-  body: JSON.stringify(subscription),
-});
-
-
-    localStorage.setItem("alertsEnabled", "true");
-    setAlertsEnabled(true);
-
-    alert("Notifications enabled successfully");
-  } catch (err) {
-    alert(err.message || "Failed to enable notifications");
-  }
-};
-
+      localStorage.setItem("alertsEnabled", "true");
+      setAlertsEnabled(true);
+      alert("Notifications enabled successfully");
+    } catch (err) {
+      alert(err.message || "Failed to enable notifications");
+    }
+  };
 
   /* =========================
      UI
@@ -308,6 +345,63 @@ await fetch("/api/notifications/subscribe", {
             >
               Leave Queue
             </button>
+          </div>
+        )}
+      </section>
+
+      {/* =========================
+          TICKET HISTORY
+      ========================= */}
+      <section className="max-w-6xl mx-auto mt-24">
+        <h3 className="text-xl font-semibold mb-6">
+          Your Ticket History
+        </h3>
+
+        {ticketHistory.length === 0 ? (
+          <p className="text-slate-400">🕘 No past tickets found.</p>
+        ) : (
+          <div className="overflow-x-auto rounded-2xl border border-white/10">
+            <table className="w-full text-left">
+              <thead className="bg-white/5">
+                <tr className="text-slate-300">
+                  <th className="px-6 py-4">Ticket</th>
+                  <th>Department</th>
+                  <th>Status</th>
+                  <th>Joined</th>
+                  <th>Served</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ticketHistory.map((t, i) => (
+                  <tr
+                    key={i}
+                    className="border-t border-white/10 hover:bg-white/5"
+                  >
+                    <td className="px-6 py-4 font-semibold">
+                      {t.ticketNumber}
+                    </td>
+                    <td>{t.department}</td>
+                    <td>
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm ${
+                          t.status === "completed"
+                            ? "bg-emerald-500/20 text-emerald-300"
+                            : "bg-red-500/20 text-red-300"
+                        }`}
+                      >
+                        {t.status}
+                      </span>
+                    </td>
+                    <td>{new Date(t.joinedAt).toLocaleString()}</td>
+                    <td>
+                      {t.servedAt
+                        ? new Date(t.servedAt).toLocaleString()
+                        : "--"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </section>
