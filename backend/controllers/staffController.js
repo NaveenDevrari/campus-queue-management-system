@@ -7,6 +7,8 @@ import { getCrowdStatusByDepartment } from "../services/crowdStatus.service.js";
 import crypto from "crypto";
 import StaffQr from "../models/StaffQr.js";
 
+/* 🔔 PUSH NOTIFICATION UTILITY */
+import { sendPushToUser } from "../utils/push.js";
 
 
 // ==============================
@@ -17,7 +19,7 @@ export const getStaffProfile = async (req, res) => {
     if (req.user.role !== "staff") {
       return res.status(403).json({ message: "Staff only" });
     }
- 
+
     const staff = await User.findById(req.user.id)
       .populate("department", "name description");
 
@@ -27,8 +29,9 @@ export const getStaffProfile = async (req, res) => {
   }
 };
 
+
 // ==============================
-// STAFF CALL NEXT TICKET
+// STAFF CALL NEXT TICKET  🔥 PUSH FIX HERE
 // ==============================
 export const callNextTicket = async (req, res) => {
   try {
@@ -71,12 +74,21 @@ export const callNextTicket = async (req, res) => {
     queue.currentTicket = nextTicket._id;
     await queue.save();
 
-    // 3️⃣ Emit ticket called
+    // 3️⃣ SOCKET EVENT (REALTIME UI)
     io.to(`department_${departmentId}`).emit("ticket_called", {
       ticketNumber: nextTicket.ticketNumber,
     });
 
-    // 4️⃣ Emit UPDATED crowd status (✅ CORRECT PLACE)
+    // 🔔 4️⃣ PUSH NOTIFICATION (BACKGROUND / MOBILE)
+    if (nextTicket.user) {
+      await sendPushToUser(nextTicket.user.toString(), {
+        title: "🎟️ It's Your Turn!",
+        body: `Ticket ${nextTicket.ticketNumber} is now being served`,
+        url: `${process.env.FRONTEND_BASE_URL}/#/student`,
+      });
+    }
+
+    // 5️⃣ Crowd status update
     const crowdStatus = await getCrowdStatusByDepartment(departmentId);
 
     io.to(`department_${departmentId}`).emit("queue_crowd_updated", {
@@ -95,17 +107,16 @@ export const callNextTicket = async (req, res) => {
   }
 };
 
+
 // ==============================
 // STAFF COMPLETE CURRENT TICKET
 // ==============================
 export const completeTicket = async (req, res) => {
   try {
-    // 🔐 Role check
     if (req.user.role !== "staff") {
       return res.status(403).json({ message: "Staff only" });
     }
 
-    // 👤 Get staff & department
     const staff = await User.findById(req.user.id);
     if (!staff || !staff.department) {
       return res.status(400).json({
@@ -114,8 +125,6 @@ export const completeTicket = async (req, res) => {
     }
 
     const departmentId = staff.department.toString();
-
-    // 🎯 Find queue for department
     const queue = await Queue.findOne({ department: departmentId });
 
     if (!queue || !queue.currentTicket) {
@@ -124,27 +133,22 @@ export const completeTicket = async (req, res) => {
       });
     }
 
-    // 🎟️ Find current ticket
     const ticket = await Ticket.findById(queue.currentTicket);
     if (!ticket) {
       return res.status(404).json({ message: "Ticket not found" });
     }
 
-    // ✅ Complete ticket
     ticket.status = "completed";
     ticket.servedAt = new Date();
     await ticket.save();
 
-    // 🔄 Clear current ticket from queue
     queue.currentTicket = null;
     await queue.save();
 
-    // 📢 Emit ticket completed event
     io.to(`department_${departmentId}`).emit("ticket_completed", {
       ticketNumber: ticket.ticketNumber,
     });
 
-    // 🚦 Emit UPDATED crowd status (🔥 VERY IMPORTANT)
     const crowdStatus = await getCrowdStatusByDepartment(departmentId);
 
     io.to(`department_${departmentId}`).emit("queue_crowd_updated", {
@@ -152,7 +156,6 @@ export const completeTicket = async (req, res) => {
       ...crowdStatus,
     });
 
-    // ✅ Final response
     res.json({
       message: "Ticket completed successfully",
       ticketNumber: ticket.ticketNumber,
@@ -162,6 +165,7 @@ export const completeTicket = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 // ==============================
 // STAFF TOGGLE QUEUE STATUS
@@ -178,8 +182,8 @@ export const toggleQueueStatus = async (req, res) => {
     }
 
     const departmentId = staff.department.toString();
-
     const queue = await Queue.findOne({ department: departmentId });
+
     if (!queue) {
       return res.status(404).json({ message: "Queue not found" });
     }
@@ -200,6 +204,7 @@ export const toggleQueueStatus = async (req, res) => {
   }
 };
 
+
 // ==============================
 // SET QUEUE LIMIT
 // ==============================
@@ -210,12 +215,10 @@ export const setQueueLimit = async (req, res) => {
     }
 
     const { maxTickets } = req.body;
-
     const staff = await User.findById(req.user.id);
     const departmentId = staff.department.toString();
 
     const queue = await Queue.findOne({ department: departmentId });
-
     queue.maxTickets = maxTickets;
     await queue.save();
 
@@ -232,6 +235,7 @@ export const setQueueLimit = async (req, res) => {
   }
 };
 
+
 // ==============================
 // STAFF INCREASE QUEUE LIMIT
 // ==============================
@@ -242,7 +246,6 @@ export const increaseQueueLimit = async (req, res) => {
     }
 
     const { increaseBy } = req.body;
-
     if (!increaseBy || increaseBy <= 0) {
       return res.status(400).json({ message: "Invalid increase value" });
     }
@@ -255,10 +258,7 @@ export const increaseQueueLimit = async (req, res) => {
     }
 
     const departmentId = staff.department.toString();
-
-    const queue = await Queue.findOne({
-      department: departmentId,
-    });
+    const queue = await Queue.findOne({ department: departmentId });
 
     if (!queue) {
       return res.status(404).json({ message: "Queue not found" });
@@ -302,20 +302,14 @@ export const generateDepartmentQR = async (req, res) => {
     }
 
     const departmentId = staff.department.toString();
-    console.log("🧑‍💼 STAFF DEPARTMENT:", departmentId);
-
     const endOfToday = new Date();
     endOfToday.setHours(23, 59, 59, 999);
-    console.log("🕒 NOW:", new Date());
-    console.log("⏰ QR VALID TILL:", endOfToday);
 
     let staffQr = await StaffQr.findOne({
       department: departmentId,
       isActive: true,
       validDate: { $gte: new Date() },
     });
-
-    console.log("🔍 EXISTING STAFF QR:", staffQr);
 
     if (!staffQr) {
       staffQr = await StaffQr.create({
@@ -324,14 +318,9 @@ export const generateDepartmentQR = async (req, res) => {
         validDate: endOfToday,
         isActive: true,
       });
-
-      console.log("🆕 NEW STAFF QR CREATED:", staffQr);
     }
 
     const joinUrl = `${process.env.FRONTEND_BASE_URL}/#/guest/entry/${staffQr.qrId}`;
-    console.log("🔗 FINAL QR ID:", staffQr.qrId);
-    console.log("🌐 JOIN URL:", joinUrl);
-
     const qrCode = await QRCode.toDataURL(joinUrl);
 
     res.json({
@@ -345,8 +334,6 @@ export const generateDepartmentQR = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
-
 
 
 // ==============================
@@ -373,15 +360,11 @@ export const getQueueStats = async (req, res) => {
       return res.status(404).json({ message: "Queue not found" });
     }
 
-    const total = await Ticket.countDocuments({
-      queue: queue._id,
-    });
-
+    const total = await Ticket.countDocuments({ queue: queue._id });
     const served = await Ticket.countDocuments({
       queue: queue._id,
       status: "completed",
     });
-
     const remaining = await Ticket.countDocuments({
       queue: queue._id,
       status: { $in: ["waiting", "serving"] },

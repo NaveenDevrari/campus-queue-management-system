@@ -7,6 +7,8 @@ import {
   getCrowdStatus,
 } from "../../services/student";
 import { socket } from "../../services/socket";
+import { subscribeToPush } from "../../services/push";
+
 
 export default function StudentDashboard() {
   const [departments, setDepartments] = useState([]);
@@ -49,16 +51,8 @@ export default function StudentDashboard() {
           navigator.vibrate([300, 150, 300, 150, 300]);
         }
 
-        // 🔔 NOTIFICATION
-        if ("serviceWorker" in navigator) {
-          navigator.serviceWorker.ready.then((reg) => {
-            reg.showNotification("🎟️ It's Your Turn!", {
-              body: "Please proceed to the counter now.",
-              icon: "/icon-192.png",
-              vibrate: [300, 150, 300],
-            });
-          });
-        }
+
+        
       }
     };
 
@@ -188,21 +182,25 @@ export default function StudentDashboard() {
      🔔 ENABLE ALERTS (FINAL)
   ========================= */
   const enableAlerts = async () => {
-    if (!("Notification" in window)) {
-      alert("Notifications are not supported on this device");
-      return;
-    }
+  try {
+    const subscription = await subscribeToPush();
 
-    try {
-      await Notification.requestPermission();
-    } catch {}
+    // send subscription to backend
+    await fetch("/api/notifications/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(subscription),
+    });
 
-    // ✅ UI DECISION — NOT BROWSER
     localStorage.setItem("alertsEnabled", "true");
     setAlertsEnabled(true);
 
-    if (navigator.vibrate) navigator.vibrate(150);
-  };
+    alert("Notifications enabled successfully");
+  } catch (err) {
+    alert(err.message || "Failed to enable notifications");
+  }
+};
+
 
   /* =========================
      UI
