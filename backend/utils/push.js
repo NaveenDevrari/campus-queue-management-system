@@ -2,14 +2,15 @@ import webpush from "web-push";
 import PushSubscription from "../models/PushSubscription.js";
 
 /* ==============================
-   INITIALIZE WEB PUSH (SAFE)
+   INITIALIZE WEB PUSH
 ================================ */
 export const initWebPush = () => {
   const publicKey = process.env.VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
 
   if (!publicKey || !privateKey) {
-    throw new Error("❌ VAPID keys are missing in environment variables");
+    console.error("❌ VAPID keys missing");
+    return; // ⛔ DO NOT CRASH SERVER
   }
 
   webpush.setVapidDetails(
@@ -43,5 +44,3 @@ export const sendPushToUser = async (userId, payload) => {
     console.error("❌ Push failed:", error.message);
   }
 };
-
-export default webpush;
