@@ -14,6 +14,7 @@ import staffRoutes from "./routes/staffRoutes.js";
 import guestRoutes from "./routes/guestRoutes.js";
 import queueRoutes from "./routes/queueRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import { initWebPush } from "./utils/push.js";
 
 
 
@@ -21,6 +22,8 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 // LOAD ENV VARIABLES
 // =======================
 dotenv.config();
+initWebPush();
+
 
 // =======================
 // CREATE EXPRESS APP
