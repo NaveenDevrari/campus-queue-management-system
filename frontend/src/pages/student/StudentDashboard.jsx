@@ -9,6 +9,8 @@ import {
 } from "../../services/student";
 import { socket } from "../../services/socket";
 import { subscribeToPush } from "../../services/push";
+import FeedbackModal from "../../components/student/FeedbackModal";
+import { submitFeedback } from "../../services/student";
 
 export default function StudentDashboard() {
   const [departments, setDepartments] = useState([]);
@@ -27,6 +29,10 @@ export default function StudentDashboard() {
 
   // 🆕 HISTORY
   const [ticketHistory, setTicketHistory] = useState([]);
+
+  // 🆕 FEEDBACK
+  const [feedbackTicketId, setFeedbackTicketId] = useState(null);
+  const [submittedFeedback, setSubmittedFeedback] = useState([]);
 
   /* 🔔 FINAL SINGLE SOURCE OF TRUTH (UI ONLY) */
   const [alertsEnabled, setAlertsEnabled] = useState(() => {
@@ -187,7 +193,9 @@ export default function StudentDashboard() {
   const handleJoinQueue = async () => {
     try {
       const data = await joinQueue(joinDept);
-      setTicketInfo(data);
+      const activeTicket = await getMyActiveTicket();
+      setTicketInfo(activeTicket);
+
       setMyDepartmentId(joinDept);
       setMessage(data.message);
       joinRoomOnce(joinDept);
@@ -204,6 +212,22 @@ export default function StudentDashboard() {
       setMessage("Failed to leave queue");
     }
   };
+
+  const handleSubmitFeedback = async (payload) => {
+  try {
+    await submitFeedback(payload);
+
+    setFeedbackTicketId(null);
+    setMessage("Thank you for your feedback.");
+
+    // 🔥 IMPORTANT: refresh history so button disappears
+    const updatedHistory = await getMyTicketHistory();
+    setTicketHistory(updatedHistory);
+  } catch (err) {
+    alert(err.message);
+  }
+};
+
 
   const joinRoomOnce = (departmentId) => {
     if (!departmentId) return;
@@ -309,102 +333,157 @@ export default function StudentDashboard() {
 
       {/* JOIN QUEUE */}
       <section className="max-w-6xl mx-auto">
-        <h3 className="text-lg font-semibold mb-4">Join Queue</h3>
+  <h3 className="text-lg font-semibold mb-4">Join Queue</h3>
 
-        <select
-          value={joinDept}
-          onChange={(e) => setJoinDept(e.target.value)}
-          disabled={!!ticketInfo || !queueOpen}
-          className="w-full max-w-md px-5 py-4 rounded-xl bg-white text-slate-900"
-        >
-          <option value="">Select Department</option>
-          {departments.map((dept) => (
-            <option key={dept._id} value={dept._id}>
-              {dept.name}
-            </option>
-          ))}
-        </select>
+  <select
+    value={joinDept}
+    onChange={(e) => setJoinDept(e.target.value)}
+    disabled={!!ticketInfo || !queueOpen}
+    className="w-full max-w-md px-5 py-4 rounded-xl bg-white text-slate-900"
+  >
+    <option value="">Select Department</option>
+    {departments.map((dept) => (
+      <option key={dept._id} value={dept._id}>
+        {dept.name}
+      </option>
+    ))}
+  </select>
 
-        <button
-          onClick={handleJoinQueue}
-          disabled={!joinDept || !!ticketInfo || !queueOpen}
-          className="mt-6 w-full max-w-md py-4 rounded-xl bg-blue-600 text-white font-semibold disabled:opacity-50"
-        >
-          {ticketInfo ? "Already in Queue" : "Join Queue"}
-        </button>
+  <button
+    onClick={handleJoinQueue}
+    disabled={!joinDept || !!ticketInfo || !queueOpen}
+    className="mt-6 w-full max-w-md py-4 rounded-xl bg-blue-600 text-white font-semibold disabled:opacity-50"
+  >
+    {ticketInfo ? "Already in Queue" : "Join Queue"}
+  </button>
 
-        {ticketInfo && (
-          <div className="mt-12 bg-white/10 rounded-3xl p-8 border">
-            <h3 className="text-lg font-semibold mb-4">Your Ticket</h3>
-            <p>Ticket Number: <b>{ticketInfo.ticketNumber}</b></p>
-            <p>Position: <b>{ticketInfo.position}</b></p>
+  {ticketInfo && (
+    <div className="mt-10 bg-white/10 rounded-3xl p-8 border border-white/10 max-w-md">
+      <h3 className="text-lg font-semibold mb-4">Your Ticket</h3>
 
-            <button
-              onClick={handleCancelQueue}
-              className="mt-6 px-6 py-3 rounded-xl bg-red-600"
-            >
-              Leave Queue
-            </button>
-          </div>
-        )}
-      </section>
+      <p className="mb-2">
+        Ticket Number: <b>{ticketInfo.ticketNumber}</b>
+      </p>
+
+      <p className="mb-4">
+        Position in Queue: <b>{ticketInfo.position}</b>
+      </p>
+
+      <button
+        onClick={handleCancelQueue}
+        className="px-6 py-3 rounded-xl bg-red-600 text-white font-semibold"
+      >
+        Leave Queue
+      </button>
+    </div>
+  )}
+</section>
+
 
       {/* =========================
-          TICKET HISTORY
+          TICKET HISTORY + FEEDBACK
       ========================= */}
       <section className="max-w-6xl mx-auto mt-24">
-        <h3 className="text-xl font-semibold mb-6">
-          Your Ticket History
-        </h3>
+  <h3 className="text-xl font-semibold mb-6">
+    Your Ticket History
+  </h3>
 
-        {ticketHistory.length === 0 ? (
-          <p className="text-slate-400">🕘 No past tickets found.</p>
-        ) : (
-          <div className="overflow-x-auto rounded-2xl border border-white/10">
-            <table className="w-full text-left">
-              <thead className="bg-white/5">
-                <tr className="text-slate-300">
-                  <th className="px-6 py-4">Ticket</th>
-                  <th>Department</th>
-                  <th>Status</th>
-                  <th>Joined</th>
-                  <th>Served</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ticketHistory.map((t, i) => (
-                  <tr
-                    key={i}
-                    className="border-t border-white/10 hover:bg-white/5"
+  {ticketHistory.length === 0 ? (
+    <p className="text-slate-400">🕘 No past tickets found.</p>
+  ) : (
+    <div className="overflow-x-auto rounded-2xl border border-white/10">
+      <table className="w-full text-left">
+        <thead className="bg-white/5">
+          <tr className="text-slate-300">
+            <th className="px-6 py-4">Ticket</th>
+            <th>Department</th>
+            <th>Status</th>
+            <th>Joined</th>
+            <th>Served</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {ticketHistory.map((t, i) => {
+
+            console.log("Ticket row object:", t);
+            const isExpired =
+              t.servedAt &&
+              Date.now() - new Date(t.servedAt).getTime() >
+                24 * 60 * 60 * 1000;
+
+            return (
+              <tr
+                key={i}
+                className="border-t border-white/10 hover:bg-white/5"
+              >
+                <td className="px-6 py-4 font-semibold">
+                  {t.ticketNumber}
+                </td>
+
+                <td>{t.department}</td>
+
+                <td>
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm ${
+                      t.status === "completed"
+                        ? "bg-emerald-500/20 text-emerald-300"
+                        : "bg-red-500/20 text-red-300"
+                    }`}
                   >
-                    <td className="px-6 py-4 font-semibold">
-                      {t.ticketNumber}
-                    </td>
-                    <td>{t.department}</td>
-                    <td>
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm ${
-                          t.status === "completed"
-                            ? "bg-emerald-500/20 text-emerald-300"
-                            : "bg-red-500/20 text-red-300"
-                        }`}
-                      >
-                        {t.status}
-                      </span>
-                    </td>
-                    <td>{new Date(t.joinedAt).toLocaleString()}</td>
-                    <td>
-                      {t.servedAt
-                        ? new Date(t.servedAt).toLocaleString()
-                        : "--"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+                    {t.status}
+                  </span>
+                </td>
+
+                <td>{new Date(t.joinedAt).toLocaleString()}</td>
+
+                <td>
+                  {t.servedAt
+                    ? new Date(t.servedAt).toLocaleString()
+                    : "--"}
+                </td>
+
+                <td>
+                  {t.status !== "completed" ? (
+                    "--"
+                  ) : isExpired ? (
+                    <span className="text-slate-400 text-sm">
+                      Feedback time ended
+                    </span>
+                  ) : (
+                  <button
+  onClick={() => {
+    console.log("Give Feedback clicked:", t._id);
+    setFeedbackTicketId(t._id);
+  }}
+  className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 transition"
+>
+  Give Feedback
+</button>
+
+
+
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  )}
+</section>
+
+
+      {feedbackTicketId && (
+        <FeedbackModal
+          ticketId={feedbackTicketId}
+          onClose={() => setFeedbackTicketId(null)}
+          onSubmit={handleSubmitFeedback}
+        />
+      )}
+
 
       {message && (
         <div className="mt-12 flex justify-center">

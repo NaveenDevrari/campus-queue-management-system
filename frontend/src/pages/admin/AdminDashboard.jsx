@@ -21,6 +21,9 @@ export default function AdminDashboard() {
 
   const [search, setSearch] = useState("");
 
+  // 🆕 STUDENT FEEDBACK
+  const [feedback, setFeedback] = useState([]);
+
   const departmentsOverviewRef = useRef(null);
 
   /* =========================
@@ -29,6 +32,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchDepartments();
     fetchStaff();
+    fetchFeedback();
   }, []);
 
   const fetchDepartments = async () => {
@@ -49,29 +53,22 @@ export default function AdminDashboard() {
     }
   };
 
-  /* =========================
-     NAVBAR → SCROLL
-  ========================= */
-  useEffect(() => {
-    const handleScrollToDepartments = () => {
-      departmentsOverviewRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
+  const fetchFeedback = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/admin/feedback", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-    };
 
-    window.addEventListener(
-      "scrollToDepartmentsOverview",
-      handleScrollToDepartments
-    );
-
-    return () => {
-      window.removeEventListener(
-        "scrollToDepartmentsOverview",
-        handleScrollToDepartments
-      );
-    };
-  }, []);
+      if (!res.ok) throw new Error("Failed to load feedback");
+      const data = await res.json();
+      setFeedback(data);
+    } catch (err) {
+      console.error("Feedback fetch failed", err);
+    }
+  };
 
   /* =========================
      ACTIONS
@@ -138,7 +135,7 @@ export default function AdminDashboard() {
         </p>
       </section>
 
-      {/* MAIN GRID */}
+      {/* CREATE + ASSIGN */}
       <section className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 mb-28">
 
         {/* CREATE DEPARTMENT */}
@@ -152,20 +149,20 @@ export default function AdminDashboard() {
               placeholder="Department name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-5 py-4 rounded-xl bg-white/10 border border-white/10 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+              className="w-full px-5 py-4 rounded-xl bg-white/10 border border-white/10"
             />
 
             <input
               placeholder="Description (optional)"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-5 py-4 rounded-xl bg-white/10 border border-white/10 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+              className="w-full px-5 py-4 rounded-xl bg-white/10 border border-white/10"
             />
 
             <button
               onClick={handleCreateDepartment}
               disabled={loading}
-              className="px-6 py-4 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-semibold hover:from-violet-700 hover:to-fuchsia-700 transition disabled:opacity-50"
+              className="px-6 py-4 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-semibold disabled:opacity-50"
             >
               {loading ? "Creating..." : "Create Department"}
             </button>
@@ -174,19 +171,7 @@ export default function AdminDashboard() {
 
         {/* ASSIGN STAFF */}
         <div>
-          {/* 🔥 EYE-CATCHING NOTE CARD */}
-          <div className="mb-6 rounded-2xl border-l-4 border-amber-400
-                          bg-gradient-to-r from-amber-500/20 to-orange-500/10
-                          backdrop-blur px-5 py-4
-                          shadow-lg shadow-amber-500/20">
-            <p className="text-sm text-amber-200 leading-relaxed">
-              ⚠️ <b>Important:</b> To change or update the staff assigned to a
-              department, use this section. Assigning a new staff member will
-              <b> replace the currently assigned one</b>.
-            </p>
-          </div>
-
-          <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-xl">
+          <div className="bg-white/5 rounded-3xl p-8 border border-white/10">
             <h3 className="text-lg font-semibold text-violet-300 mb-6">
               Assign Staff to Department
             </h3>
@@ -194,7 +179,7 @@ export default function AdminDashboard() {
             <select
               value={selectedStaff}
               onChange={(e) => setSelectedStaff(e.target.value)}
-              className="w-full px-5 py-4 mb-4 rounded-xl bg-white/10 border border-white/10 text-slate-100"
+              className="w-full px-5 py-4 mb-4 rounded-xl bg-white/10"
             >
               <option value="">Select Staff</option>
               {staff.map((s) => (
@@ -207,7 +192,7 @@ export default function AdminDashboard() {
             <select
               value={selectedDepartment}
               onChange={(e) => setSelectedDepartment(e.target.value)}
-              className="w-full px-5 py-4 mb-6 rounded-xl bg-white/10 border border-white/10 text-slate-100"
+              className="w-full px-5 py-4 mb-6 rounded-xl bg-white/10"
             >
               <option value="">Select Department</option>
               {departments.map((d) => (
@@ -220,7 +205,7 @@ export default function AdminDashboard() {
             <button
               onClick={handleAssignStaff}
               disabled={loading}
-              className="w-full py-4 rounded-2xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition disabled:opacity-50"
+              className="w-full py-4 rounded-2xl bg-emerald-600 text-white font-semibold disabled:opacity-50"
             >
               {loading ? "Assigning..." : "Assign Staff"}
             </button>
@@ -229,23 +214,22 @@ export default function AdminDashboard() {
       </section>
 
       {/* DEPARTMENTS OVERVIEW */}
-      <section ref={departmentsOverviewRef} className="max-w-6xl mx-auto mb-24">
+      <section
+        ref={departmentsOverviewRef}
+        className="max-w-6xl mx-auto mb-28"
+      >
         <h2 className="text-2xl font-semibold text-violet-300 mb-8">
           Departments Overview
         </h2>
 
-        {/* SEARCH */}
         <div className="flex justify-center mb-12">
-          <div className="flex items-center gap-3 px-4 py-3 w-full max-w-md rounded-xl bg-white/10 border border-white/10 backdrop-blur">
-            <span className="text-slate-400 text-lg">🔍</span>
-            <input
-              type="text"
-              placeholder="Search department..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-transparent text-slate-100 placeholder-slate-400 focus:outline-none"
-            />
-          </div>
+          <input
+            type="text"
+            placeholder="Search department..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full max-w-md px-4 py-3 rounded-xl bg-white/10 border border-white/10"
+          />
         </div>
 
         <div className="space-y-4">
@@ -258,40 +242,83 @@ export default function AdminDashboard() {
             return (
               <div
                 key={dept._id}
-                className="bg-white/5 backdrop-blur rounded-2xl p-6 border border-white/10 shadow"
+                className="bg-white/5 rounded-2xl p-6 border border-white/10"
               >
-                <h3 className="font-semibold text-slate-100">
-                  {dept.name}
-                </h3>
-
+                <h3 className="font-semibold">{dept.name}</h3>
                 <p className="text-sm text-slate-400 mb-3">
                   {dept.description || "No description"}
                 </p>
 
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-400 mb-2">
-                    Current Staff
+                <p className="text-xs text-slate-400 uppercase mb-1">
+                  Current Staff
+                </p>
+                {currentStaff ? (
+                  <p className="text-sm">
+                    {currentStaff.fullName} ({currentStaff.email})
                   </p>
-
-                  {currentStaff ? (
-                    <p className="text-sm text-slate-300">
-                      {currentStaff.fullName} ({currentStaff.email})
-                    </p>
-                  ) : (
-                    <p className="text-sm text-slate-500">
-                      No staff assigned
-                    </p>
-                  )}
-                </div>
+                ) : (
+                  <p className="text-sm text-slate-500">No staff assigned</p>
+                )}
               </div>
             );
           })}
         </div>
       </section>
 
+      {/* STUDENT FEEDBACK */}
+      <section className="max-w-6xl mx-auto mb-24">
+        <h2 className="text-2xl font-semibold text-violet-300 mb-8">
+          Student Feedback
+        </h2>
+
+        {feedback.length === 0 ? (
+          <p className="text-slate-400">No feedback submitted yet.</p>
+        ) : (
+          <div className="overflow-x-auto rounded-2xl border border-white/10">
+            <table className="w-full text-left">
+              <thead className="bg-white/5">
+                <tr className="text-slate-300">
+                  <th className="px-6 py-4">Ticket</th>
+                  <th>Department</th>
+                  <th>Options</th>
+                  <th>Comment</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {feedback.map((f) => (
+                  <tr
+                    key={f._id}
+                    className="border-t border-white/10 hover:bg-white/5"
+                  >
+                    <td className="px-6 py-4 font-semibold">
+                      {f.ticketNumber}
+                    </td>
+                    <td>{f.department}</td>
+                    <td>
+                      <ul className="list-disc pl-5 text-sm">
+                        {f.options.map((o, i) => (
+                          <li key={i}>{o}</li>
+                        ))}
+                      </ul>
+                    </td>
+                    <td className="text-sm text-slate-300">
+                      {f.comment || "--"}
+                    </td>
+                    <td className="text-sm">
+                      {new Date(f.submittedAt).toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
       {message && (
         <div className="mt-12 flex justify-center">
-          <div className="px-6 py-3 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 shadow">
+          <div className="px-6 py-3 rounded-xl bg-emerald-500/20 border text-emerald-200">
             {message}
           </div>
         </div>

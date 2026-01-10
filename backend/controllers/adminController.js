@@ -1,6 +1,10 @@
 import Department from "../models/Department.js";
 import Queue from "../models/Queue.js";
 import User from "../models/User.js";
+import Feedback from "../models/Feedback.js";
+import Ticket from "../models/Ticket.js";
+
+
 
 /* ======================================================
    CREATE DEPARTMENT (ADMIN)
@@ -137,6 +141,42 @@ export const getStaffUsers = async (req, res) => {
     res.json(staff);
   } catch (error) {
     console.error("Get staff users error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+/* ======================================================
+   GET ALL STUDENT FEEDBACK (ADMIN)
+====================================================== */
+export const getAllFeedback = async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Admins only" });
+    }
+
+    const feedback = await Feedback.find()
+      .populate({
+        path: "ticket",
+        select: "ticketNumber createdAt",
+      })
+      .populate({
+        path: "department",
+        select: "name",
+      })
+      .sort({ createdAt: -1 });
+
+    const formatted = feedback.map((f) => ({
+      _id: f._id,
+      ticketNumber: f.ticket?.ticketNumber || "N/A",
+      department: f.department?.name || "N/A",
+      options: f.options,
+      comment: f.comment,
+      submittedAt: f.createdAt,
+    }));
+
+    res.json(formatted);
+  } catch (error) {
+    console.error("Get feedback error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

@@ -2,6 +2,8 @@ import Queue from "../models/Queue.js";
 import Ticket from "../models/Ticket.js";
 import Department from "../models/Department.js";
 import { io } from "../server.js";
+import Feedback from "../models/Feedback.js";
+
 
 // ==============================
 // STUDENT JOIN QUEUE
@@ -251,16 +253,102 @@ export const getMyTicketHistory = async (req, res) => {
       })
       .sort({ createdAt: -1 });
 
-    res.json(
-      tickets.map((t) => ({
-        ticketNumber: t.ticketNumber,
-        department: t.queue.department.name,
-        status: t.status,
-        joinedAt: t.createdAt,
-        servedAt: t.servedAt,
-      }))
+    // 🔍 Get all feedback for these tickets
+    const feedbacks = await Feedback.find({
+      student: req.user.id,
+      ticket: { $in: tickets.map((t) => t._id) },
+    }).select("ticket");
+
+    const feedbackTicketIds = new Set(
+      feedbacks.map((f) => f.ticket.toString())
     );
+
+    const history = tickets.map((t) => ({
+      _id: t._id,
+      ticketNumber: t.ticketNumber,
+      department: t.queue?.department?.name || "N/A",
+      status: t.status,
+      joinedAt: t.createdAt,
+      servedAt: t.servedAt || null,
+
+      // ✅ THIS IS THE KEY FIX
+      feedbackSubmitted: feedbackTicketIds.has(t._id.toString()),
+    }));
+
+    res.json(history);
   } catch (error) {
+    console.error("Ticket history error:", error);
     res.status(500).json({ message: error.message });
   }
 };
+
+// ==============================
+// STUDENT: SUBMIT FEEDBACK
+// ==============================
+export const submitFeedback = async (req, res) => {
+  try {
+    // 🔒 Role check
+    if (req.user.role !== "student") {
+      return res.status(403).json({ message: "Students only" });
+    }
+
+    const { ticketId, options, comment } = req.body;
+
+    // ✅ Basic validation
+    if (!ticketId || !options || options.length === 0) {
+      return res.status(400).json({
+        message: "At least one feedback option is required",
+      });
+    }
+
+    // 🔍 Find completed ticket of this student
+    const ticket = await Ticket.findOne({
+      _id: ticketId,
+      user: req.user.id,
+      status: "completed",
+    }).populate({
+      path: "queue",
+      populate: {
+        path: "department",
+      },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({
+        message: "Feedback allowed only for completed tickets",
+      });
+    }
+
+    // 🚫 Prevent duplicate feedback
+    const existingFeedback = await Feedback.findOne({
+      ticket: ticketId,
+    });
+
+    if (existingFeedback) {
+      return res.status(409).json({
+        message: "Feedback already submitted for this ticket",
+      });
+    }
+
+    // 💾 Create feedback (MATCHES YOUR MODEL)
+    const feedback = await Feedback.create({
+      ticket: ticket._id,
+      student: req.user.id,
+      department: ticket.queue.department._id,
+      options,
+      comment: comment || "",
+    });
+
+    // ✅ IMPORTANT: SEND JSON RESPONSE
+    return res.status(201).json({
+      message: "Feedback submitted successfully",
+      feedbackId: feedback._id,
+    });
+  } catch (error) {
+    console.error("❌ Feedback submit error:", error);
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+ 
