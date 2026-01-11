@@ -11,6 +11,8 @@ import { socket } from "../../services/socket";
 import { subscribeToPush } from "../../services/push";
 import FeedbackModal from "../../components/student/FeedbackModal";
 import { submitFeedback } from "../../services/student";
+import api from "../../services/api";
+
 
 export default function StudentDashboard() {
   const [departments, setDepartments] = useState([]);
@@ -34,6 +36,17 @@ export default function StudentDashboard() {
   const [feedbackTicketId, setFeedbackTicketId] = useState(null);
   const [submittedFeedback, setSubmittedFeedback] = useState([]);
 
+  // 🚨 EMERGENCY REQUEST (student side)
+const [emergencyActive, setEmergencyActive] = useState(false);
+const [emergencyRequested, setEmergencyRequested] = useState(false);
+
+  
+  const [showEmergencyForm, setShowEmergencyForm] = useState(false);
+const [emergencyReason, setEmergencyReason] = useState("");
+const [emergencyProof, setEmergencyProof] = useState(null);
+
+
+
   /* 🔔 FINAL SINGLE SOURCE OF TRUTH (UI ONLY) */
   const [alertsEnabled, setAlertsEnabled] = useState(() => {
     return localStorage.getItem("alertsEnabled") === "true";
@@ -46,6 +59,21 @@ export default function StudentDashboard() {
   ========================= */
   useEffect(() => {
     if (!socket.connected) socket.connect();
+      const onEmergencyStarted = (data) => {
+    setEmergencyActive(true);
+    setNowServing("EMERGENCY");
+    setMessage(
+      data?.note || "🚨 Emergency in progress. Please wait."
+    );
+  };
+
+  const onEmergencyEnded = () => {
+    setEmergencyActive(false);
+    setEmergencyRequested(false);
+    setNowServing("--");
+    setMessage("Emergency resolved. Queue resumed.");
+  };
+
 
     const onTicketCalled = (data) => {
       setNowServing(data.ticketNumber);
@@ -76,11 +104,35 @@ export default function StudentDashboard() {
     const onQueueLimitUpdated = (data) =>
       setQueueLimit(data.maxTickets);
 
+    const onEmergencyYourTurn = () => {
+  setEmergencyActive(true);
+  setNowServing("EMERGENCY");
+  setMessage("🚨 It’s your turn. Please proceed immediately.");
+};
+
+  const onEmergencyServed = () => {
+  setEmergencyActive(false);
+  setEmergencyRequested(false);
+  setNowServing("--");
+  setMessage("✅ You have been served. Thank you.");
+
+  // 🔁 allow re-joining room later
+  joinedRoomRef.current = false;
+};
+
+
+
     socket.on("ticket_called", onTicketCalled);
     socket.on("ticket_completed", onTicketCompleted);
     socket.on("ticket_cancelled", onTicketCancelled);
     socket.on("queue_status_changed", onQueueStatusChanged);
     socket.on("queue_limit_updated", onQueueLimitUpdated);
+    socket.on("emergency_started", onEmergencyStarted);
+    socket.on("emergency_ended", onEmergencyEnded);
+    socket.on("emergency_your_turn", onEmergencyYourTurn);
+socket.on("emergency_served", onEmergencyServed);
+
+
 
     return () => {
       socket.off("ticket_called", onTicketCalled);
@@ -88,8 +140,40 @@ export default function StudentDashboard() {
       socket.off("ticket_cancelled", onTicketCancelled);
       socket.off("queue_status_changed", onQueueStatusChanged);
       socket.off("queue_limit_updated", onQueueLimitUpdated);
+      socket.off("emergency_started", onEmergencyStarted);
+      socket.off("emergency_ended", onEmergencyEnded);
+      socket.off("emergency_your_turn", onEmergencyYourTurn);
+socket.off("emergency_served", onEmergencyServed);
+
+
     };
   }, [ticketInfo, alertsEnabled]);
+
+  /* =========================
+   CHECK ACTIVE EMERGENCY
+========================= */
+useEffect(() => {
+  if (!joinDept) return; // ⛔ DO NOT CALL API WITHOUT DEPARTMENT
+
+  const checkEmergency = async () => {
+    try {
+      const res = await api.get("/student/emergency-status", {
+        params: { departmentId: joinDept },
+      });
+
+      if (res.data?.active) {
+        setEmergencyActive(true);
+        setNowServing("EMERGENCY");
+        setMessage("🚨 Emergency in progress. Please wait.");
+      }
+    } catch (err) {
+      console.error("Emergency status check failed", err);
+    }
+  };
+
+  checkEmergency();
+}, [joinDept]); // 👈 THIS IS THE KEY
+
 
   /* =========================
      RESTORE ACTIVE TICKET
@@ -109,6 +193,39 @@ export default function StudentDashboard() {
     restoreTicket();
   }, []);
 
+
+  /* =========================
+   JOIN USER ROOM (🔥 REQUIRED)
+========================= */
+useEffect(() => {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    const userId = payload.id || payload._id;
+
+    if (userId) {
+      socket.emit("join_user", userId);
+      console.log("👤 Joined user room:", userId);
+    }
+  } catch (err) {
+    console.error("Failed to join user room", err);
+  }
+}, []);
+
+   
+
+  /* =========================
+   JOIN ROOM WHEN DEPARTMENT IS SELECTED
+========================= */
+useEffect(() => {
+  if (joinDept) {
+    joinRoomOnce(joinDept);
+  }
+}, [joinDept]);
+
+
   /* =========================
      MOBILE RESUME FIX
   ========================= */
@@ -124,11 +241,15 @@ export default function StudentDashboard() {
             setMyDepartmentId(ticket.departmentId);
             setJoinDept(ticket.departmentId);
 
-            socket.emit("join_department", ticket.departmentId);
-            joinedRoomRef.current = true;
+            joinRoomOnce(ticket.departmentId);
+
           }
         } catch (err) {
-          console.error("Resume sync failed", err);
+          if (err.response?.status === 401) {
+    console.warn("Auth expired — skipping resume sync");
+    return;
+  }
+  console.error("Resume sync failed", err);
         }
       }
     };
@@ -213,6 +334,54 @@ export default function StudentDashboard() {
     }
   };
 
+  const handleRequestEmergency = async () => {
+  try {
+    await api.post("/student/emergency-request", {
+      departmentId: joinDept,
+    });
+
+    setEmergencyRequested(true);
+    setMessage("Emergency request sent. Waiting for staff approval.");
+  } catch (err) {
+    setMessage(
+      err.response?.data?.message || "Failed to request emergency"
+    );
+  }
+};
+
+const handleSubmitEmergencyForm = async () => {
+  if (!emergencyReason || !emergencyProof) {
+    setMessage("All emergency fields are required.");
+    return;
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append("departmentId", joinDept);
+    formData.append("reason", emergencyReason);
+    formData.append("proof", emergencyProof);
+
+    await api.post("/student/emergency-request", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    setEmergencyRequested(true);
+    setShowEmergencyForm(false);
+    setEmergencyReason("");
+    setEmergencyProof(null);
+
+    setMessage("Emergency request sent. Waiting for staff approval.");
+  } catch (err) {
+    setMessage(
+      err.response?.data?.message || "Failed to request emergency"
+    );
+  }
+};
+
+
+
   const handleSubmitFeedback = async (payload) => {
   try {
     await submitFeedback(payload);
@@ -230,10 +399,17 @@ export default function StudentDashboard() {
 
 
   const joinRoomOnce = (departmentId) => {
-    if (!departmentId) return;
-    socket.emit("join_department", departmentId);
-    joinedRoomRef.current = true;
-  };
+  if (!departmentId || joinedRoomRef.current) return;
+
+  const id =
+    typeof departmentId === "object"
+      ? departmentId._id || departmentId.toString()
+      : departmentId;
+
+  socket.emit("join_department", id);
+  joinedRoomRef.current = true;
+};
+
 
   const resetState = (msg) => {
     setTicketInfo(null);
@@ -335,10 +511,22 @@ export default function StudentDashboard() {
       <section className="max-w-6xl mx-auto">
   <h3 className="text-lg font-semibold mb-4">Join Queue</h3>
 
+  <button
+  onClick={() => setShowEmergencyForm(true)}
+
+  disabled={!joinDept || emergencyRequested || emergencyActive}
+  className="mt-4 w-full max-w-md py-4 rounded-xl bg-red-600 text-white font-semibold disabled:opacity-50"
+>
+  🚨 Request Emergency
+</button>
+
+
+
   <select
     value={joinDept}
     onChange={(e) => setJoinDept(e.target.value)}
-    disabled={!!ticketInfo || !queueOpen}
+    disabled={!!ticketInfo || !queueOpen || emergencyActive}
+
     className="w-full max-w-md px-5 py-4 rounded-xl bg-white text-slate-900"
   >
     <option value="">Select Department</option>
@@ -351,7 +539,8 @@ export default function StudentDashboard() {
 
   <button
     onClick={handleJoinQueue}
-    disabled={!joinDept || !!ticketInfo || !queueOpen}
+    disabled={!joinDept || !!ticketInfo || !queueOpen || emergencyActive}
+
     className="mt-6 w-full max-w-md py-4 rounded-xl bg-blue-600 text-white font-semibold disabled:opacity-50"
   >
     {ticketInfo ? "Already in Queue" : "Join Queue"}
@@ -475,23 +664,62 @@ export default function StudentDashboard() {
   )}
 </section>
 
+{feedbackTicketId && (
+  <FeedbackModal
+    ticketId={feedbackTicketId}
+    onClose={() => setFeedbackTicketId(null)}
+    onSubmit={handleSubmitFeedback}
+  />
+)}
 
-      {feedbackTicketId && (
-        <FeedbackModal
-          ticketId={feedbackTicketId}
-          onClose={() => setFeedbackTicketId(null)}
-          onSubmit={handleSubmitFeedback}
-        />
-      )}
+{/* 🔴 EMERGENCY REQUEST FORM 🔴 */}
+{showEmergencyForm && (
+  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+    <div className="bg-white text-slate-900 rounded-2xl p-6 w-full max-w-md">
+      <h3 className="text-xl font-bold mb-4">🚨 Emergency Request</h3>
 
+      <label className="block mb-2 font-semibold">Reason *</label>
+      <textarea
+        value={emergencyReason}
+        onChange={(e) => setEmergencyReason(e.target.value)}
+        className="w-full mb-4 p-3 rounded-lg border"
+        placeholder="Explain your emergency..."
+      />
 
-      {message && (
-        <div className="mt-12 flex justify-center">
-          <div className="px-6 py-3 rounded-xl bg-emerald-500/15 border text-emerald-300">
-            ✅ {message}
-          </div>
-        </div>
-      )}
+      <label className="block mb-2 font-semibold">Upload Proof *</label>
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(e) => setEmergencyProof(e.target.files[0])}
+        className="mb-6"
+      />
+
+      <div className="flex gap-4">
+        <button
+          onClick={() => setShowEmergencyForm(false)}
+          className="flex-1 py-3 rounded-xl bg-gray-300 font-semibold"
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={handleSubmitEmergencyForm}
+          className="flex-1 py-3 rounded-xl bg-red-600 text-white font-semibold"
+        >
+          Send Request
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{message && (
+  <div className="mt-12 flex justify-center">
+    <div className="px-6 py-3 rounded-xl bg-emerald-500/15 border text-emerald-300">
+      ✅ {message}
+    </div>
+  </div>
+)}
     </div>
   );
 }

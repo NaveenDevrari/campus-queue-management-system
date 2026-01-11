@@ -30,6 +30,16 @@ const queueSchema = new mongoose.Schema(
       type: Number, // in minutes
       default: 5,
     },
+    emergencyActive: {
+  type: Boolean,
+  default: false,
+},
+
+emergencyReason: {
+  type: String,
+  default: "",
+},
+
   },
   { timestamps: true }
 );

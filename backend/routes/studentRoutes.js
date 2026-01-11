@@ -1,5 +1,6 @@
 import express from "express";
 import { protect } from "../middleware/authMiddleware.js";
+
 import {
   joinQueue,
   getActiveDepartments,
@@ -9,36 +10,29 @@ import {
   submitFeedback,
 } from "../controllers/studentController.js";
 
+import {
+  requestEmergency,
+  getEmergencyStatus,
+} from "../controllers/emergencyController.js";
+
+import uploadEmergency from "../middleware/uploadEmergency.js";
+
 const router = express.Router();
 
-// ==============================
-// STUDENT: VIEW DEPARTMENTS
-// ==============================
 router.get("/departments", protect, getActiveDepartments);
-
-// ==============================
-// STUDENT: JOIN QUEUE
-// ==============================
 router.post("/join-queue", protect, joinQueue);
-//=============================
-// STUDENT: VIEW ACTIVE TICKET
-// ==============================
 router.get("/my-ticket", protect, getMyActiveTicket);
-// ==============================
-// STUDENT: TICKET HISTORY
-// ==============================
 router.get("/ticket-history", protect, getMyTicketHistory);
-
-
-// ==============================
-// STUDENT: CANCEL QUEUE
-// ==============================
 router.post("/cancel", protect, cancelQueue);
-// ==============================
-// STUDENT: SUBMIT FEEDBACK
-// ==============================
 router.post("/feedback", protect, submitFeedback);
 
+router.get("/emergency-status", protect, getEmergencyStatus);
 
+router.post(
+  "/emergency-request",
+  protect,
+  uploadEmergency.single("proof"),
+  requestEmergency
+);
 
 export default router;

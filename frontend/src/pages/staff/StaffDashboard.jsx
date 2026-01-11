@@ -6,7 +6,9 @@ import {
   toggleQueue,
   increaseQueueLimit,
   getQueueStats,
+  getPendingEmergencies, // 👈 ADD THIS
 } from "../../services/staff";
+
 import api from "../../services/api";
 import { socket } from "../../services/socket";
 
@@ -22,6 +24,17 @@ export default function StaffDashboard() {
   const [completing, setCompleting] = useState(false);
   const [isQueueOpen, setIsQueueOpen] = useState(false);
 
+  // 🚨 Emergency
+  const [emergencyActive, setEmergencyActive] = useState(false);
+  const [emergencyNote, setEmergencyNote] = useState("");
+
+  const [emergencies, setEmergencies] = useState([]);
+
+
+
+  const [pendingEmergencies, setPendingEmergencies] = useState(0);
+
+
   const [stats, setStats] = useState({
     total: 0,
     served: 0,
@@ -35,6 +48,25 @@ export default function StaffDashboard() {
     fetchStaff();
     fetchStats();
   }, []);
+
+  const fetchEmergencyCount = async () => {
+  try {
+    const res = await api.get("/staff/emergency/count");
+    setPendingEmergencies(res.data.count);
+  } catch (err) {
+    console.error("Failed to fetch emergency count", err);
+  }
+};
+
+const fetchEmergencies = async () => {
+  try {
+    const data = await getPendingEmergencies();
+    setEmergencies(data);
+  } catch (err) {
+    console.error("Failed to fetch emergencies", err);
+  }
+};
+
 
   const fetchStaff = async () => {
     try {
@@ -71,14 +103,53 @@ export default function StaffDashboard() {
       fetchStats();
     };
 
+    const onEmergencyStarted = (data) => {
+      setEmergencyActive(true);
+      setEmergencyNote(data?.note || "Emergency in progress");
+      setCurrentTicket("EMERGENCY");
+    };
+
+    const onEmergencyEnded = () => {
+      setEmergencyActive(false);
+      setEmergencyNote("");
+      setCurrentTicket(null);
+    };
+
     socket.on("ticket_called", onTicketCalled);
     socket.on("ticket_completed", onTicketCompleted);
+    socket.on("emergency_started", onEmergencyStarted);
+    socket.on("emergency_ended", onEmergencyEnded);
 
     return () => {
       socket.off("ticket_called", onTicketCalled);
       socket.off("ticket_completed", onTicketCompleted);
+      socket.off("emergency_started", onEmergencyStarted);
+      socket.off("emergency_ended", onEmergencyEnded);
     };
   }, []);
+
+  
+   useEffect(() => {
+  // initial load
+  fetchEmergencyCount();
+  fetchEmergencies();
+
+  const onEmergencyRequested = () => {
+    fetchEmergencyCount();
+    fetchEmergencies(); // 👈 THIS IS THE KEY LINE
+  };
+
+  socket.on("emergency_requested", onEmergencyRequested);
+
+  return () => {
+    socket.off("emergency_requested", onEmergencyRequested);
+  };
+}, []);
+
+
+
+
+
 
   useEffect(() => {
     const handleScrollToQR = () => {
@@ -134,6 +205,9 @@ export default function StaffDashboard() {
     }
   };
 
+  
+
+
   const handleGenerateQR = async () => {
     try {
       setQrLoading(true);
@@ -147,21 +221,70 @@ export default function StaffDashboard() {
     }
   };
 
+  
+
+
+  // 🚨 Emergency handlers
+  const handleStartEmergency = async () => {
+  try {
+    await api.post("/staff/emergency/start", {
+      note: "Emergency in progress",
+    });
+
+    setPendingEmergencies(0);
+    setEmergencies([]); // ✅ ADD THIS LINE
+  } catch {
+    setMessage("Failed to start emergency");
+  }
+};
+
+
+
+  const handleEndEmergency = async () => {
+    try {
+      await api.post("/staff/emergency/end");
+    } catch {
+      setMessage("Failed to resolve emergency");
+    }
+  };
+
   useEffect(() => {
     if (!message) return;
     const timer = setTimeout(() => setMessage(""), 5000);
     return () => clearTimeout(timer);
   }, [message]);
 
+  const handleRejectEmergency = async (id) => {
+  try {
+    await api.post(`/staff/emergency/reject/${id}`);
+    setMessage("Emergency rejected");
+    fetchEmergencyCount();
+    fetchEmergencies();
+  } catch {
+    setMessage("Failed to reject emergency");
+  }
+};
+
+const handleApproveEmergency = async (id) => {
+  try {
+    await api.post(`/staff/emergency/approve/${id}`);
+    setMessage("Emergency approved");
+
+    fetchEmergencyCount();
+    fetchEmergencies();
+  } catch {
+    setMessage("Failed to approve emergency");
+  }
+};
+
+
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a1330] via-[#0f1f4d] to-[#141b3a] px-6 pt-12 pb-24 text-slate-100">
 
       {/* HEADER */}
       <section className="max-w-6xl mx-auto mb-16">
-        <h1 className="text-4xl font-extrabold
-    bg-gradient-to-r
-    from-violet-400 via-fuchsia-300 to-indigo-400
-    bg-clip-text text-transparent">
+        <h1 className="text-4xl font-extrabold bg-gradient-to-r from-violet-400 via-fuchsia-300 to-indigo-400 bg-clip-text text-transparent">
           Staff Dashboard
         </h1>
         <p className="text-slate-300 mt-3">
@@ -171,6 +294,91 @@ export default function StaffDashboard() {
           </span>
         </p>
       </section>
+
+      {/* 🚨 EMERGENCY REQUEST ALERT */}
+{pendingEmergencies > 0 && !emergencyActive && (
+  <section className="max-w-6xl mx-auto mb-12">
+    <div className="rounded-2xl border border-red-500 bg-red-600/20 p-6 shadow-lg">
+      <h3 className="text-lg font-bold text-red-400">
+        🚨 Emergency Requests
+      </h3>
+
+      <p className="mt-2 text-4xl font-extrabold text-red-300">
+        {pendingEmergencies}
+      </p>
+
+      <p className="text-sm text-red-200">
+        Pending student emergency request
+        {pendingEmergencies > 1 ? "s" : ""}
+      </p>
+    </div>
+  </section>
+)}
+
+        {/* 🚨 EMERGENCY DETAILS PANEL */}
+
+{emergencies.length > 0 && !emergencyActive && (
+  <section className="max-w-6xl mx-auto mb-16">
+    <h3 className="text-xl font-bold text-red-400 mb-6">
+      🚨 Emergency Requests (Verification Required)
+    </h3>
+
+    <div className="grid gap-6">
+      {emergencies.map((e) => (
+        <div
+          key={e._id}
+          className="bg-red-600/10 border border-red-500/30 rounded-2xl p-6"
+        >
+          {/* STUDENT INFO */}
+          <p className="font-semibold text-slate-100">
+            Student: {e.student?.name} ({e.student?.email})
+          </p>
+
+          {/* REASON */}
+          <p className="mt-3 text-red-200">
+            <span className="font-semibold">Reason:</span> {e.reason}
+          </p>
+
+          {/* PROOF IMAGE */}
+          {e.proof && (
+            <a
+              href={`http://localhost:5000${e.proof}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-block mt-4 text-blue-400 underline"
+            >
+              📎 View Proof Image
+            </a>
+          )}
+
+          {/* ACTION BUTTONS */}
+          <div className="mt-6 flex gap-4">
+            {/* ✅ APPROVE */}
+            <button
+              onClick={() => handleApproveEmergency(e._id)}
+              className="px-6 py-3 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700"
+            >
+              ✅ Approve
+            </button>
+
+            {/* ❌ REJECT */}
+            <button
+              onClick={() => handleRejectEmergency(e._id)}
+              className="px-6 py-3 rounded-xl bg-gray-700 text-white font-semibold hover:bg-gray-800"
+            >
+              ❌ Reject
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+
+
+
+
+
 
       {/* NOW SERVING */}
       <section className="max-w-6xl mx-auto mb-20 text-center">
@@ -182,6 +390,12 @@ export default function StaffDashboard() {
           {currentTicket || "--"}
         </div>
 
+        {emergencyActive && (
+          <p className="mt-4 text-red-400 font-semibold">
+            🚨 Emergency Mode Active
+          </p>
+        )}
+
         <div className="mt-10 flex justify-center gap-6 flex-wrap">
           <StatCard label="Total" value={stats.total} />
           <StatCard label="Served" value={stats.served} color="emerald" />
@@ -191,7 +405,7 @@ export default function StaffDashboard() {
         <div className="mt-12 flex gap-5 justify-center flex-wrap">
           <button
             onClick={handleCallNext}
-            disabled={stats.remaining === 0}
+            disabled={stats.remaining === 0 || emergencyActive}
             className="px-12 py-4 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-semibold hover:opacity-90 disabled:opacity-40"
           >
             Call Next
@@ -199,11 +413,30 @@ export default function StaffDashboard() {
 
           <button
             onClick={handleCompleteTicket}
-            disabled={!currentTicket || completing}
+            disabled={!currentTicket || completing || emergencyActive}
             className="px-12 py-4 rounded-2xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 disabled:opacity-40"
           >
             {completing ? "Completing…" : "Complete Ticket"}
           </button>
+        </div>
+
+        {/* 🚨 EMERGENCY CONTROLS */}
+        <div className="mt-6 flex gap-4 justify-center flex-wrap">
+          {!emergencyActive ? (
+            <button
+              onClick={handleStartEmergency}
+              className="px-10 py-4 rounded-2xl bg-red-600 text-white font-semibold"
+            >
+              🚨 Call Emergency
+            </button>
+          ) : (
+            <button
+              onClick={handleEndEmergency}
+              className="px-10 py-4 rounded-2xl bg-emerald-600 text-white font-semibold"
+            >
+              ✅ Resolve Emergency
+            </button>
+          )}
         </div>
       </section>
 

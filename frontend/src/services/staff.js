@@ -54,3 +54,8 @@ export const getQueueStats = async () => {
   const res = await api.get("/staff/queue-stats");
   return res.data;
 };
+
+export const getPendingEmergencies = async () => {
+  const res = await api.get("/staff/emergencies");
+  return res.data;
+};

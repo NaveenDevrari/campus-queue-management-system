@@ -15,7 +15,7 @@ import guestRoutes from "./routes/guestRoutes.js";
 import queueRoutes from "./routes/queueRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import { initWebPush } from "./utils/push.js";
-
+import path from "path";
 
 
 // =======================
@@ -72,6 +72,9 @@ app.use("/api/staff", staffRoutes);
 app.use("/api/guest", guestRoutes);
 app.use("/api/queue", queueRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static("uploads"));
+
 
 // =======================
 // TEST ROUTE
@@ -108,16 +111,25 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
   console.log("🔌 Socket connected:", socket.id);
 
+  // 🏢 Department room (already used)
   socket.on("join_department", (departmentId) => {
     const roomName = `department_${departmentId}`;
     socket.join(roomName);
     console.log(`🏠 Socket ${socket.id} joined ${roomName}`);
   });
 
+  // 👤 USER-SPECIFIC ROOM (🔥 THIS WAS MISSING)
+  socket.on("join_user", (userId) => {
+    const userRoom = `user_${userId}`;
+    socket.join(userRoom);
+    console.log(`👤 Socket ${socket.id} joined ${userRoom}`);
+  });
+
   socket.on("disconnect", () => {
     console.log("❌ Socket disconnected:", socket.id);
   });
 });
+
 
 // =======================
 // START SERVER
