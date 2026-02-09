@@ -73,7 +73,6 @@ app.use("/api/guest", guestRoutes);
 app.use("/api/queue", queueRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/uploads", express.static("uploads"));
-app.use("/uploads", express.static("uploads"));
 
 
 // =======================
@@ -144,3 +143,4 @@ server.listen(PORT, () => {
 // EXPORT IO FOR CONTROLLERS
 // =======================
 export { io };
+// Ensure server picks up all routes

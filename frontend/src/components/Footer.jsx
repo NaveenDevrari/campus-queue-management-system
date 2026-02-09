@@ -31,7 +31,7 @@ export default function Footer() {
       <div className="absolute bottom-0 -right-40 w-[420px] h-[420px] bg-violet-600/20 rounded-full blur-3xl" />
 
       {/* BACKGROUND */}
-      <div className="relative bg-gradient-to-b from-[#0a1330] via-[#0f1f4d] to-[#141b3a]">
+      <div className="relative bg-[var(--bg-primary)] border-t border-[var(--glass-border)]">
         <div className="max-w-7xl mx-auto px-6 pt-24 pb-10">
 
           {/* MAIN GRID */}
@@ -54,25 +54,25 @@ export default function Footer() {
                   CQ
                 </div>
 
-                <h3 className="text-xl font-semibold text-slate-100 tracking-tight">
+                <h3 className="text-xl font-semibold text-[var(--text-primary)] tracking-tight">
                   Campus Queue
                 </h3>
               </div>
 
-              <p className="text-slate-300 text-sm leading-relaxed max-w-sm">
+              <p className="text-[var(--text-secondary)] text-sm leading-relaxed max-w-sm">
                 Campus Queue is a modern digital queue management system
                 designed to eliminate physical waiting lines and bring
                 transparency, efficiency, and speed to campus services.
               </p>
 
-              <p className="text-slate-400 text-xs mt-4">
+              <p className="text-[var(--text-secondary)] text-xs mt-4">
                 Built for students, staff, and administrators.
               </p>
             </div>
 
             {/* QUICK LINKS */}
             <div>
-              <h4 className="text-slate-100 font-semibold mb-5">
+              <h4 className="text-[var(--text-primary)] font-semibold mb-5">
                 Quick Links
               </h4>
 
@@ -90,7 +90,7 @@ export default function Footer() {
                         to={item.path}
                         className="
                           group inline-flex items-center gap-2
-                          text-slate-300
+                          text-[var(--text-secondary)]
                           transition-all duration-300
                           hover:text-blue-400
                           hover:translate-x-1
@@ -98,7 +98,6 @@ export default function Footer() {
                       >
                         <Icon
                           size={16}
-                          className="text-slate-400 group-hover:text-blue-400 transition"
                         />
                         <span>{item.name}</span>
                       </Link>
@@ -110,11 +109,11 @@ export default function Footer() {
 
             {/* PLATFORM HIGHLIGHTS */}
             <div>
-              <h4 className="text-slate-100 font-semibold mb-5">
+              <h4 className="text-[var(--text-primary)] font-semibold mb-5">
                 Platform Highlights
               </h4>
 
-              <ul className="space-y-3 text-sm text-slate-300">
+              <ul className="space-y-3 text-sm text-[var(--text-secondary)]">
                 <li className="flex items-start gap-3">
                   <Layers size={16} className="text-blue-400 mt-0.5" />
                   MERN stack architecture
@@ -140,8 +139,8 @@ export default function Footer() {
           </div>
 
           {/* BOTTOM BAR */}
-          <div className="mt-16 pt-6 border-t border-white/10 text-center">
-            <p className="text-xs text-slate-400 tracking-wide">
+          <div className="mt-16 pt-6 border-t border-[var(--glass-border)] text-center">
+            <p className="text-xs text-[var(--text-secondary)] tracking-wide">
               © {new Date().getFullYear()} Campus Queue · All rights reserved
             </p>
           </div>

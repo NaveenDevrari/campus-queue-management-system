@@ -38,6 +38,8 @@ export const startEmergency = async (req, res) => {
       return res.status(403).json({ message: "Staff only" });
     }
 
+    const { emergencyId, note } = req.body;
+
     const staff = await User.findById(req.user.id);
     if (!staff?.department) {
       return res.status(400).json({ message: "Staff not assigned to department" });
@@ -52,27 +54,35 @@ export const startEmergency = async (req, res) => {
       return res.status(409).json({ message: "Emergency already active" });
     }
 
-    // 👉 PICK NEXT PENDING EMERGENCY
-    const emergency = await Emergency.findOne({
-      department: departmentId,
-      status: "approved",
-    }).sort({ createdAt: 1 });
+    // 👉 PICK SPECIFIC OR NEXT PENDING EMERGENCY
+    let emergency;
+    if (emergencyId) {
+       emergency = await Emergency.findOne({ _id: emergencyId, department: departmentId, status: "approved" });
+       if (!emergency) return res.status(404).json({ message: "Specified emergency not found" });
+    } else {
+       emergency = await Emergency.findOne({
+          department: departmentId,
+          status: "approved",
+       }).sort({ createdAt: 1 });
+    }
 
     if (!emergency) {
-  return res.status(404).json({
-    message: "No approved emergencies available",
-  });
-}
+      return res.status(404).json({
+        message: "No approved emergencies available",
+      });
+    }
 
     emergency.status = "active";
     await emergency.save();
 
     queue.emergencyActive = true;
+    queue.emergencyReason = note || "Emergency in progress";
     await queue.save();
 
     // 🔔 DEPARTMENT NOTIFY
     io.to(`department_${departmentId}`).emit("emergency_started", {
       studentId: emergency.student.toString(),
+      note: queue.emergencyReason,
     });
 
     // 🔔 STUDENT-SPECIFIC NOTIFY
@@ -190,10 +200,20 @@ export const getEmergencyStatus = async (req, res) => {
 
 export const requestEmergency = async (req, res) => {
   try {
+    console.log("🚨 Emergency Request Received:");
+    console.log("Body:", req.body);
+    console.log("File:", req.file);
+
     const { departmentId, reason } = req.body;
 
     if (!req.file) {
+      console.log("❌ No proof file uploaded");
       return res.status(400).json({ message: "Proof image required" });
+    }
+
+    if (!departmentId || !reason) {
+        console.log("❌ Missing fields");
+        return res.status(400).json({ message: "Department and reason required" });
     }
 
     const emergency = await Emergency.create({
@@ -204,6 +224,8 @@ export const requestEmergency = async (req, res) => {
       status: "pending",
     });
 
+    console.log("✅ Emergency created:", emergency._id);
+
     // notify staff via socket
     io.to(`department_${departmentId}`).emit("emergency_requested", {
       emergencyId: emergency._id,
@@ -213,7 +235,8 @@ export const requestEmergency = async (req, res) => {
 
     res.json({ message: "Emergency request sent" });
   } catch (err) {
-    res.status(500).json({ message: "Emergency request failed" });
+    console.error("❌ Emergency request error:", err);
+    res.status(500).json({ message: "Emergency request failed", error: err.message });
   }
 };
 

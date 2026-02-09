@@ -1,5 +1,8 @@
-import multer from "multer";
+import { createRequire } from "module";
 import path from "path";
+
+const require = createRequire(import.meta.url);
+const multer = require("multer");
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {

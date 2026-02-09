@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glassmorphism Design System Demo</title>
+  <link rel="stylesheet" href="./src/index.css">
+  <style>
+    /* Additional demo-specific styles */
+    .demo-section {
+      margin: 3rem 0;
+    }
+    
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+    
+    .demo-hero {
+      min-height: 60vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 3rem 1.5rem;
+    }
+    
+    .asymmetric-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+    
+    .asymmetric-grid > *:nth-child(1) {
+      grid-column: span 7;
+    }
+    
+    .asymmetric-grid > *:nth-child(2) {
+      grid-column: span 5;
+    }
+    
+    .asymmetric-grid > *:nth-child(3) {
+      grid-column: span 5;
+    }
+    
+    .asymmetric-grid > *:nth-child(4) {
+      grid-column: span 7;
+    }
+    
+    @media (max-width: 768px) {
+      .asymmetric-grid > * {
+        grid-column: span 12 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Glass Navigation Bar -->
+  <nav class="glass-navbar" style="padding: 1rem 2rem;">
+    <div style="display: flex; align-items: center; justify-content: space-between; max-width: 1280px; margin: 0 auto;">
+      <div style="display: flex; align-items: center; gap: 2rem;">
+        <h1 style="font-size: 1.5rem; font-weight: 600; color: rgb(var(--color-primary));">
+          Campus Queue
+        </h1>
+        <div style="display: flex; gap: 1.5rem;">
+          <a href="#" style="color: rgb(var(--color-text-primary)); text-decoration: none; transition: color 0.3s;">Home</a>
+          <a href="#" style="color: rgb(var(--color-text-secondary)); text-decoration: none; transition: color 0.3s;">About</a>
+          <a href="#" style="color: rgb(var(--color-text-secondary)); text-decoration: none; transition: color 0.3s;">Dashboard</a>
+        </div>
+      </div>
+      
+      <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" style="color: rgb(var(--color-primary));">
+          <path class="sun-icon" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+        </svg>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="demo-hero bg-gradient-sky animate-gradient">
+    <div style="max-width: 800px;">
+      <h1 style="font-size: 3.5rem; font-weight: 300; margin-bottom: 1.5rem; line-height: 1.2;">
+        Glassmorphism Design System
+      </h1>
+      <p style="font-size: 1.25rem; color: rgb(var(--color-text-secondary)); margin-bottom: 2rem; line-height: 1.75;">
+        A sophisticated, production-ready CSS framework with sky blue theme and advanced glassmorphism effects
+      </p>
+      <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+        <button class="glass-button">Get Started</button>
+        <button class="glass-button">View Docs</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="container-glass">
+    
+    <!-- Feature Cards Section -->
+    <section class="demo-section">
+      <h2 style="font-size: 2rem; font-weight: 500; margin-bottom: 1rem; text-align: center;">
+        Glass Components
+      </h2>
+      <div class="divider"></div>
+      
+      <div class="demo-grid">
+        <!-- Card 1 -->
+        <div class="glass-card animate-float">
+          <div style="width: 3rem; height: 3rem; border-radius: 0.75rem; background: linear-gradient(135deg, rgba(var(--color-primary), 0.2), rgba(var(--color-primary-light), 0.1)); display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+            <svg width="24" height="24" fill="none" stroke="rgb(var(--color-primary))" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+          </div>
+          <h3 style="font-size: 1.25rem; font-weight: 500; margin-bottom: 0.5rem;">
+            Fast Performance
+          </h3>
+          <p style="color: rgb(var(--color-text-secondary)); line-height: 1.6;">
+            Hardware-accelerated animations and optimized backdrop-filter for smooth 60 FPS rendering
+          </p>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="glass-card" style="animation-delay: 0.5s;">
+          <div style="width: 3rem; height: 3rem; border-radius: 0.75rem; background: linear-gradient(135deg, rgba(var(--color-primary), 0.2), rgba(var(--color-primary-light), 0.1)); display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+            <svg width="24" height="24" fill="none" stroke="rgb(var(--color-primary))" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+          </div>
+          <h3 style="font-size: 1.25rem; font-weight: 500; margin-bottom: 0.5rem;">
+            Fully Responsive
+          </h3>
+          <p style="color: rgb(var(--color-text-secondary)); line-height: 1.6;">
+            Mobile-first design with breakpoints at 640px, 768px, 1024px, and 1440px
+          </p>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="glass-card" style="animation-delay: 1s;">
+          <div style="width: 3rem; height: 3rem; border-radius: 0.75rem; background: linear-gradient(135deg, rgba(var(--color-primary), 0.2), rgba(var(--color-primary-light), 0.1)); display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+            <svg width="24" height="24" fill="none" stroke="rgb(var(--color-primary))" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+          </div>
+          <h3 style="font-size: 1.25rem; font-weight: 500; margin-bottom: 0.5rem;">
+            Accessible
+          </h3>
+          <p style="color: rgb(var(--color-text-secondary)); line-height: 1.6;">
+            WCAG AA compliant with focus indicators and reduced motion support
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Asymmetric Grid Section -->
+    <section class="demo-section">
+      <h2 style="font-size: 2rem; font-weight: 500; margin-bottom: 1rem; text-align: center;">
+        Asymmetric Layout
+      </h2>
+      <div class="divider"></div>
+      
+      <div class="asymmetric-grid">
+        <div class="glass-panel">
+          <h3 style="font-size: 1.5rem; font-weight: 500; margin-bottom: 1rem;">
+            Data Visualization
+          </h3>
+          <div style="height: 200px; background: linear-gradient(135deg, rgba(var(--color-primary), 0.1), rgba(var(--color-primary-dark), 0.15)); border-radius: 0.5rem; display: flex; align-items: center; justify-content: center;">
+            <div class="animate-pulse-soft">
+              <svg width="80" height="80" fill="none" stroke="rgb(var(--color-primary))" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+              </svg>
+            </div>
+          </div>
+          <p style="color: rgb(var(--color-text-secondary)); margin-top: 1rem; line-height: 1.6;">
+            Real-time queue analytics with smooth animations
+          </p>
+        </div>
+
+        <div class="glass-panel bg-gradient-deep">
+          <h3 style="font-size: 1.25rem; font-weight: 500; margin-bottom: 1rem;">
+            Status Indicators
+          </h3>
+          <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div style="width: 0.75rem; height: 0.75rem; border-radius: 50%; background: rgb(var(--color-success));" class="animate-pulse-soft"></div>
+              <span class="status-success">Active Queues</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div style="width: 0.75rem; height: 0.75rem; border-radius: 50%; background: rgb(var(--color-warning));" class="animate-pulse-soft"></div>
+              <span class="status-warning">Pending</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div style="width: 0.75rem; height: 0.75rem; border-radius: 50%; background: rgb(var(--color-info));" class="animate-pulse-soft"></div>
+              <span class="status-info">Processing</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-panel">
+          <h3 style="font-size: 1.25rem; font-weight: 500; margin-bottom: 1rem;">
+            Quick Actions
+          </h3>
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <button class="glass-button" style="width: 100%;">Join Queue</button>
+            <button class="glass-button" style="width: 100%;">View Ticket</button>
+            <button class="glass-button" style="width: 100%;">Contact Support</button>
+          </div>
+        </div>
+
+        <div class="glass-card glow">
+          <h3 style="font-size: 1.25rem; font-weight: 500; margin-bottom: 0.5rem;">
+            Now Serving
+          </h3>
+          <div style="font-size: 3rem; font-weight: 300; color: rgb(var(--color-primary)); margin: 1rem 0;">
+            #A042
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <span class="badge">Department: CS</span>
+            <span class="badge">Position: 3</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Form Section -->
+    <section class="demo-section">
+      <h2 style="font-size: 2rem; font-weight: 500; margin-bottom: 1rem; text-align: center;">
+        Form Elements
+      </h2>
+      <div class="divider"></div>
+      
+      <div class="glass-panel" style="max-width: 600px; margin: 0 auto;">
+        <form style="display: flex; flex-direction: column; gap: 1.5rem;">
+          <div>
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: rgb(var(--color-text-primary));">
+              Full Name
+            </label>
+            <input type="text" placeholder="Enter your name" class="glass-input">
+          </div>
+          
+          <div>
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: rgb(var(--color-text-primary));">
+              Email Address
+            </label>
+            <input type="email" placeholder="you@example.com" class="glass-input">
+          </div>
+          
+          <div>
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: rgb(var(--color-text-primary));">
+              Department
+            </label>
+            <select class="glass-input">
+              <option>Computer Science</option>
+              <option>Mechanical Engineering</option>
+              <option>Electrical Engineering</option>
+              <option>Civil Engineering</option>
+            </select>
+          </div>
+          
+          <div>
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: rgb(var(--color-text-primary));">
+              Message
+            </label>
+            <textarea placeholder="Your message..." class="glass-input" rows="4"></textarea>
+          </div>
+          
+          <button class="glass-button" type="submit" style="width: 100%; padding: 0.75rem;">
+            Submit Request
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Loading States -->
+    <section class="demo-section">
+      <h2 style="font-size: 2rem; font-weight: 500; margin-bottom: 1rem; text-align: center;">
+        Loading States
+      </h2>
+      <div class="divider"></div>
+      
+      <div class="demo-grid">
+        <div class="glass-card">
+          <div class="skeleton" style="height: 2rem; width: 60%; margin-bottom: 1rem;"></div>
+          <div class="skeleton" style="height: 1rem; width: 100%; margin-bottom: 0.5rem;"></div>
+          <div class="skeleton" style="height: 1rem; width: 80%;"></div>
+        </div>
+        
+        <div class="glass-card">
+          <div class="animate-shimmer" style="height: 150px; border-radius: 0.5rem; margin-bottom: 1rem;"></div>
+          <div class="skeleton" style="height: 1.5rem; width: 70%;"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="glass" style="margin-top: 4rem; padding: 2rem; text-align: center;">
+    <p style="color: rgb(var(--color-text-secondary));">
+      Campus Queue Management System • Glassmorphism Design System v1.0
+    </p>
+    <p style="color: rgb(var(--color-text-tertiary)); font-size: 0.875rem; margin-top: 0.5rem;">
+      Built with modern CSS, sky blue theme, and advanced glassmorphism effects
+    </p>
+  </footer>
+
+  <script>
+    // Theme toggle functionality
+    function toggleTheme() {
+      const html = document.documentElement;
+      const isDark = html.classList.contains('dark');
+      
+      if (isDark) {
+        html.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      } else {
+        html.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      }
+    }
+    
+    // Initialize theme from localStorage or system preference
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (savedTheme === 'light' || (!savedTheme && !prefersDark)) {
+      document.documentElement.classList.remove('dark');
+    }
+  </script>
+</body>
+</html>

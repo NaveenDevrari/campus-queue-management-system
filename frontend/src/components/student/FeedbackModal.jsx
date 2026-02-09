@@ -52,36 +52,37 @@ export default function FeedbackModal({
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-[#0f1f4d] w-full max-w-lg rounded-2xl p-6 border border-white/10">
-        <h2 className="text-xl font-semibold mb-2">
+      <div className="bg-[var(--glass-bg)] backdrop-blur-xl w-full max-w-lg rounded-2xl p-6 border border-[var(--glass-border)] shadow-2xl">
+        <h2 className="text-xl font-bold mb-2 text-[var(--text-primary)]">
           📝 Service Feedback
         </h2>
-        <p className="text-slate-300 text-sm mb-6">
+        <p className="text-[var(--text-secondary)] text-sm mb-6">
           Feedback is reviewed by administration only.
         </p>
 
-        <p className="mb-3 font-medium">
+        <p className="mb-3 font-medium text-[var(--text-primary)]">
           How was your experience?{" "}
           <span className="text-red-400">*</span>
         </p>
 
-        <div className="space-y-2 mb-6">
+        <div className="space-y-2 mb-6 text-[var(--text-primary)]">
           {OPTIONS.map((opt) => (
             <label
               key={opt}
-              className="flex items-center gap-3 cursor-pointer"
+              className="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors border border-transparent hover:border-[var(--glass-border)]"
             >
               <input
                 type="checkbox"
                 checked={selected.includes(opt)}
                 onChange={() => toggleOption(opt)}
+                className="accent-[var(--accent-primary)] w-4 h-4"
               />
               <span>{opt}</span>
             </label>
           ))}
         </div>
 
-        <label className="block mb-2">
+        <label className="block mb-2 text-[var(--text-primary)] font-medium">
           Additional comments (optional)
         </label>
         <textarea
@@ -89,15 +90,16 @@ export default function FeedbackModal({
           onChange={(e) =>
             setComment(e.target.value.slice(0, 200))
           }
-          className="w-full p-3 rounded-xl bg-white text-black"
+          className="w-full p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent-primary)] transition-colors"
           rows={4}
+          placeholder="Tell us more..."
         />
-        <p className="text-xs text-slate-400 mt-1">
+        <p className="text-xs text-[var(--text-secondary)] mt-1 text-right">
           {comment.length} / 200 characters
         </p>
 
         {error && (
-          <p className="mt-3 text-sm text-red-400">
+          <p className="mt-3 text-sm text-red-400 font-bold bg-red-500/10 p-2 rounded-lg text-center">
             ⚠️ {error}
           </p>
         )}
@@ -106,14 +108,14 @@ export default function FeedbackModal({
           <button
             onClick={onClose}
             disabled={loading}
-            className="px-5 py-2 rounded-xl bg-slate-600 disabled:opacity-50"
+            className="px-5 py-2 rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-bold transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             disabled={selected.length === 0 || loading}
             onClick={handleSubmit}
-            className="px-6 py-2 rounded-xl bg-emerald-600 disabled:opacity-50"
+            className="px-6 py-2 rounded-xl bg-[var(--accent-primary)] text-white font-bold hover:bg-[var(--accent-secondary)] shadow-lg shadow-[var(--accent-primary)]/20 disabled:opacity-50 transition-all"
           >
             {loading ? "Submitting..." : "Submit Feedback"}
           </button>

@@ -1,1 +1,208 @@
 @import "tailwindcss";
+
+@theme {
+  --color-nebula-bg-dark: #0A0E17;
+  --color-nebula-bg-dark-alt: #121826;
+  --color-nebula-cyan: #00D4AA;
+  --color-nebula-purple: #7B61FF;
+  --color-nebula-text-dark: #E2E8F0;
+  
+  --color-nebula-bg-light: #F8FAFF;
+  --color-nebula-bg-light-alt: #E8EEF8;
+  --color-nebula-ocean: #0066CC;
+  --color-nebula-text-light: #1A1A2E;
+}
+
+:root {
+  color-scheme: light dark;
+  
+  /* Dark Mode Defaults (Nebula) */
+  --bg-primary: #0A0E17;
+  --bg-secondary: #121826;
+  --accent-primary: #00D4AA;
+  --accent-secondary: #7B61FF;
+  --text-primary: #E2E8F0;
+  --text-secondary: #94A3B8;
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  
+  /* Dark Mode Gradient (Subtle Blue-Green) */
+  --bg-gradient: radial-gradient(circle at 15% 50%, rgba(20, 184, 166, 0.03), transparent 25%),
+                 radial-gradient(circle at 85% 30%, rgba(15, 23, 42, 0.05), transparent 25%);
+}
+
+/* Light Mode Overrides */
+.mt-light, :root:not(.dark) {
+  /* Softer, slightly darker background to reduce glare */
+  --bg-primary: #F0F4FA; 
+  --bg-secondary: #E2E8F3;
+  
+  --accent-primary: #0066CC;
+  --accent-secondary: #7B61FF;
+  
+  --text-primary: #1A1A2E;
+  --text-secondary: #475569;
+  
+  /* More pronounced glass effect for light mode */
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.7);
+  --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+
+  /* Richer Gradient for Light Mode */
+  --bg-gradient: 
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(20, 184, 166, 0.1) 0px, transparent 50%);
+}
+
+@layer base {
+  body {
+    @apply antialiased font-sans transition-colors duration-300;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    background-image: var(--bg-gradient);
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  /* GLASS PANELS */
+  .glass-panel,
+  .glass-card,
+  .card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: 20px;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+                box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-panel:hover,
+  .glass-card:hover,
+  .card:hover {
+    transform: translateY(-2px) scale(1.005);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    border-color: rgba(var(--accent-primary), 0.3);
+  }
+
+  .glass-card,
+  .card {
+    @apply p-6;
+    border-radius: 12px;
+  }
+
+  /* BUTTONS */
+  .btn-nebula,
+  .btn-secondary {
+    @apply relative overflow-hidden px-6 py-3 rounded-xl font-medium transition-all duration-300;
+    /* Changed from Green-Purple to Blue-Purple */
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(123, 97, 255, 0.1));
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    backdrop-filter: blur(10px);
+  }
+
+  .btn-nebula:hover,
+  .btn-secondary:hover {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(123, 97, 255, 0.2));
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+    border-color: var(--accent-secondary);
+    color: #fff;
+    /* Removed text shadow */
+  }
+
+  /* Specific override for btn-secondary legacy mapping */
+  .btn-secondary {
+    @apply text-[var(--text-primary)] hover:text-white border-[var(--glass-border)] bg-[rgba(255,255,255,0.02)];
+  }
+
+  .btn-nebula-primary,
+  .btn-primary {
+    @apply px-6 py-3 rounded-xl font-bold text-white transition-all duration-300 shadow-lg;
+    /* Solid Brand Blue Gradient (No Green) */
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    border: none;
+  }
+
+  .btn-nebula-primary:hover,
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4);
+    filter: brightness(1.1);
+  }
+
+  /* INPUTS */
+  .input-nebula,
+  .input-field {
+    @apply w-full px-5 py-3 rounded-xl outline-none transition-all duration-300;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .input-nebula:focus,
+  .input-field:focus {
+    border-color: var(--accent-primary);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1), inset 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  /* DROPDOWN OPTIONS FIX */
+  select.input-field,
+  select.input-nebula,
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1.5em;
+    padding-right: 2.5rem;
+  }
+
+  select option {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    padding: 12px;
+  }
+
+  :root:not(.dark) select option {
+    background-color: #ffffff !important;
+    color: #1a1a2e !important;
+  }
+
+  /* SIDEBAR / NAVBAR */
+  .glass-nav {
+    background: rgba(10, 14, 23, 0.7);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--glass-border);
+  }
+  
+  :root:not(.dark) .glass-nav {
+    background: rgba(255, 255, 255, 0.85);
+  }
+
+  /* TEXT UTILS */
+  .text-glow {
+    text-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+  }
+
+  /* Remove shadow/glow in light mode explicitly */
+  :root:not(.dark) .text-glow {
+    text-shadow: none !important;
+  }
+  
+  :root:not(.dark) h1, 
+  :root:not(.dark) h2, 
+  :root:not(.dark) h3, 
+  :root:not(.dark) h4, 
+  :root:not(.dark) h5, 
+  :root:not(.dark) h6 {
+     text-shadow: none !important;
+  }
+}

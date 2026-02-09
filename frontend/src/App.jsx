@@ -7,6 +7,7 @@ import Signup from "./pages/Signup";
 import About from "./pages/About";
 
 import StudentDashboard from "./pages/student/StudentDashboard";
+import ErrorBoundary from "./components/ErrorBoundary";
 import StaffDashboard from "./pages/staff/StaffDashboard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 
@@ -19,7 +20,8 @@ import GuestEntry from "./pages/guest/GuestEntry";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
-import FloatingBlueBall from "./components/FloatingBlueBall";
+import SmoothScroll from "./components/SmoothScroll";
+
 
 /* ==============================
    Layout Wrapper
@@ -49,6 +51,9 @@ function Layout({ children }) {
   /* =========================
      ✅ HASH ROUTER SAFE CHECKS
   ========================= */
+  /* =========================
+     ✅ HASH ROUTER SAFE CHECKS
+  ========================= */
   const hash = location.hash || "#/";
 
   const isGuestRoute =
@@ -58,25 +63,21 @@ function Layout({ children }) {
   const isAuthRoute =
     hash.startsWith("#/login") ||
     hash.startsWith("#/signup");
+    
+  const isDashboardRoute = 
+    hash.startsWith("#/student") || 
+    hash.startsWith("#/staff") || 
+    hash.startsWith("#/admin");
 
-  const hideLayout = isGuestRoute || isAuthRoute;
+  const hideLayout = isGuestRoute || isAuthRoute || isDashboardRoute;
 
   // ✅ FIXED
   const showFooter = hash === "#/" || hash === "" || hash === "#";
 
   return (
-    <div className="relative min-h-screen bg-[#eef2f6] dark:bg-[#0b1220] overflow-hidden transition-colors duration-300">
-
-      {/* ===== GLOBAL FLOATING BACKGROUND ===== */}
-      {!hideLayout && (
-        <>
-          <FloatingBlueBall size={140} color="bg-blue-400/50" speed={1} />
-          <FloatingBlueBall size={100} color="bg-indigo-400/45" speed={0.8} />
-          <FloatingBlueBall size={180} color="bg-blue-300/40" speed={0.6} />
-        </>
-      )}
-
+    <div className="relative min-h-screen overflow-hidden transition-colors duration-300 text-[var(--text-primary)]">
       {/* ===== LAYOUT UI ===== */}
+      <SmoothScroll />
       {!hideLayout && <Navbar />}
       {children}
       {!hideLayout && showFooter && <Footer />}
@@ -118,7 +119,9 @@ export default function App() {
           path="/student"
           element={
             <ProtectedRoute allowedRoles={["student"]}>
-              <StudentDashboard />
+              <ErrorBoundary>
+                <StudentDashboard />
+              </ErrorBoundary>
             </ProtectedRoute>
           }
         />

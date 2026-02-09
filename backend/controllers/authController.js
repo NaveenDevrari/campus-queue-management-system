@@ -70,8 +70,33 @@ export const login = async (req, res) => {
     const token = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: "30d" }
     );
+
+    // 5. Check for stale queue if staff (Auto-close after 12h inactivity)
+    if (user.role === 'staff' && user.department) {
+       try {
+         const queueModule = await import("../models/Queue.js");
+         const Queue = queueModule.default;
+         const queue = await Queue.findOne({ department: user.department });
+         
+         if (queue && queue.isOpen) {
+            const lastUpdate = new Date(queue.updatedAt);
+            const now = new Date();
+            const hoursDiff = Math.abs(now - lastUpdate) / 36e5;
+            
+            if (hoursDiff > 12) {
+               queue.isOpen = false;
+               queue.emergencyActive = false;
+               queue.currentTicket = null;
+               await queue.save();
+               console.log(`✅ Stale queue reset for staff ${user.email}`);
+            }
+         }
+       } catch (err) {
+         console.error("Queue reset error:", err);
+       }
+    }
 
     res.json({
       message: "Login successful",
@@ -97,16 +122,33 @@ export const logout = async (req, res) => {
 
     const token = authHeader.split(" ")[1];
 
-    console.log("🔴 LOGOUT TOKEN:", token); // 👈 ADD THIS
+    console.log("🔴 LOGOUT TOKEN:", token); 
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // --- NEW: Reset Queue on Logout ---
+    const user = await User.findById(decoded.id);
+    if (user && user.role === "staff" && user.department) {
+       await import("../models/Queue.js").then(async (module) => {
+         const Queue = module.default;
+         const queue = await Queue.findOne({ department: user.department });
+         if (queue) {
+           queue.isOpen = false;
+           queue.emergencyActive = false;
+           queue.currentTicket = null;
+           await queue.save();
+           console.log(`✅ Queue reset for staff ${user.email}`);
+         }
+       });
+    }
+    // ----------------------------------
 
     await TokenBlacklist.create({
       token,
       expiresAt: new Date(decoded.exp * 1000),
     });
 
-    console.log("✅ TOKEN BLACKLISTED"); // 👈 ADD THIS
+    console.log("✅ TOKEN BLACKLISTED"); 
 
     res.json({ message: "Logged out successfully" });
   } catch (error) {

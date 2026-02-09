@@ -27,46 +27,14 @@ export const getCrowdStatus = async (departmentId) => {
   return res.data;
 };
 
-const API_BASE = import.meta.env.VITE_API_URL;
-
 export const getMyTicketHistory = async () => {
-  const token = localStorage.getItem("token");
-
-  const res = await fetch(
-    `${API_BASE}/student/ticket-history`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch ticket history");
-  }
-
-  return res.json();
+  const res = await api.get("/student/ticket-history");
+  return res.data;
 };
 
-
 export const submitFeedback = async (payload) => {
-  const token = localStorage.getItem("token");
-
-  const res = await fetch("/api/student/feedback", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.message || "Feedback submission failed");
-  }
-
-  return res.json();
+  const res = await api.post("/student/feedback", payload);
+  return res.data;
 };
 
 

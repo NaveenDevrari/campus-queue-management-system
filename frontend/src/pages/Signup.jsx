@@ -57,112 +57,122 @@ export default function Signup() {
           animate-auth-card
         "
       >
-        {/* LOGO (MATCH LOGIN & FOOTER) */}
-        <div className="flex flex-col items-center mb-8">
+        {/* BACK BUTTON */}
+        <button 
+          onClick={() => navigate("/")} 
+          className="absolute top-6 left-6 flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white rounded-full transition-all border border-transparent hover:border-white/10 text-sm group"
+          title="Back to Home"
+        >
+          <span className="group-hover:-translate-x-0.5 transition-transform">←</span> Back
+        </button>
+
+        {/* LOGO */}
+        <div className="flex flex-col items-center mb-10 relative mt-4">
           <div
             className="
-              w-12 h-12 rounded-xl
-              bg-blue-600
+              w-14 h-14 rounded-2xl
+              bg-gradient-to-br from-blue-500 to-indigo-600
               flex items-center justify-center
-              text-white font-bold text-lg
-              shadow-lg mb-3
+              text-white font-bold text-2xl
+              shadow-lg shadow-blue-500/30 mb-4
             "
           >
             CQ
           </div>
 
-          <h2 className="text-xl font-bold text-blue-100">
+          <h2 className="text-2xl font-bold text-white tracking-tight">
             Campus Queue
           </h2>
         </div>
 
         {/* HEADER */}
-        <div className="text-center mb-6">
-          <h1
-            className="
-              text-2xl font-semibold
-              bg-gradient-to-r from-violet-400 via-fuchsia-400 to-indigo-400
-              bg-clip-text text-transparent
-            "
-          >
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-indigo-200 to-violet-200 mb-2">
             Create Account
           </h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Sign up to start using Campus Queue
+          <p className="text-slate-400 text-sm">
+            Join the campus network today
           </p>
         </div>
 
         {/* INPUTS */}
-        <div className="space-y-4">
-          <input
-            name="fullName"
-            placeholder="Full Name"
-            value={form.fullName}
-            onChange={handleChange}
-            className="
-              w-full px-4 py-3.5 rounded-xl
-              bg-white/10 border border-white/10
-              text-slate-100 placeholder-slate-400
-              transition-all duration-300
-              focus:outline-none
-              focus:ring-2 focus:ring-violet-500/40
-            "
-          />
+        <div className="space-y-5">
+          <div className="group">
+            <input
+              name="fullName"
+              placeholder="Full Name"
+              value={form.fullName}
+              onChange={handleChange}
+              className="
+                w-full px-5 py-4 rounded-xl
+                bg-white/5 border border-white/10
+                text-white placeholder-slate-500
+                focus:bg-white/10 focus:border-blue-500/50
+                focus:ring-4 focus:ring-blue-500/10
+                transition-all duration-300 outline-none
+              "
+            />
+          </div>
 
-          <input
-            name="email"
-            placeholder="Email address"
-            value={form.email}
-            onChange={handleChange}
-            className="
-              w-full px-4 py-3.5 rounded-xl
-              bg-white/10 border border-white/10
-              text-slate-100 placeholder-slate-400
-              transition-all duration-300
-              focus:outline-none
-              focus:ring-2 focus:ring-violet-500/40
-            "
-          />
+          <div className="group">
+            <input
+              name="email"
+              type="email"
+              placeholder="Email address"
+              value={form.email}
+              onChange={handleChange}
+              className="
+                w-full px-5 py-4 rounded-xl
+                bg-white/5 border border-white/10
+                text-white placeholder-slate-500
+                focus:bg-white/10 focus:border-blue-500/50
+                focus:ring-4 focus:ring-blue-500/10
+                transition-all duration-300 outline-none
+              "
+            />
+          </div>
 
-          <input
-            name="password"
-            type="password"
-            placeholder="Password"
-            value={form.password}
-            onChange={handleChange}
-            className="
-              w-full px-4 py-3.5 rounded-xl
-              bg-white/10 border border-white/10
-              text-slate-100 placeholder-slate-400
-              transition-all duration-300
-              focus:outline-none
-              focus:ring-2 focus:ring-violet-500/40
-            "
-          />
+          <div className="group">
+            <input
+              name="password"
+              type="password"
+              placeholder="Password"
+              value={form.password}
+              onChange={handleChange}
+              className="
+                w-full px-5 py-4 rounded-xl
+                bg-white/5 border border-white/10
+                text-white placeholder-slate-500
+                focus:bg-white/10 focus:border-blue-500/50
+                focus:ring-4 focus:ring-blue-500/10
+                transition-all duration-300 outline-none
+              "
+            />
+          </div>
 
-          <select
-            name="role"
-            value={form.role}
-            onChange={handleChange}
-            className="
-              w-full px-4 py-3.5 rounded-xl
-              bg-white/10 border border-white/10
-              text-slate-100
-              transition-all duration-300
-              focus:outline-none
-              focus:ring-2 focus:ring-violet-500/40
-            "
-          >
-            <option value="" disabled className="text-slate-500">
-              Select Role
-            </option>
-            <option value="student" className="text-slate-900">
-              Student
-            </option>
-            <option value="staff" className="text-slate-900">
-              Staff
-            </option>
-          </select>
+          <div className="relative group">
+            <select
+              name="role"
+              value={form.role}
+              onChange={handleChange}
+              className="
+                w-full px-5 py-4 rounded-xl
+                bg-white/5 border border-white/10
+                text-white
+                focus:bg-white/10 focus:border-blue-500/50
+                focus:ring-4 focus:ring-blue-500/10
+                transition-all duration-300 outline-none
+                appearance-none cursor-pointer
+              "
+            >
+              <option value="" disabled>Select Role</option>
+              <option value="student">Student</option>
+              <option value="staff">Staff</option>
+            </select>
+            <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+              ▼
+            </div>
+          </div>
         </div>
 
         {/* SIGNUP BUTTON */}
